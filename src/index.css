@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent-color: #ff2a85;
+  --accent-rgb: 255, 42, 133;
+  --accent-soft: rgba(255, 42, 133, 0.12);
+  --accent-border: rgba(255, 42, 133, 0.4);
+  --table-border: #cbd5e1;
+  --table-bg: #ffffff;
+  --table-row-alt: #f8fafc;
+  --table-header-bg: #e2e8f0;
+  --text-main: #0f172a;
+  --text-secondary: #334155;
+}
+
+html.dark {
+  --table-border: #334155;
+  --table-bg: #0f172a;
+  --table-row-alt: #1e293b;
+  --table-header-bg: #1e293b;
+  --text-main: #f8fafc;
+  --text-secondary: #cbd5e1;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Estilos del Formulario de Caso de Uso */
+.uc-container {
+  border: 2px solid var(--accent-color);
+  background-color: var(--table-bg);
+  color: var(--text-main);
+  box-shadow: 0 10px 30px -10px rgba(var(--accent-rgb), 0.2);
+  transition: all 0.25s ease;
+}
+
+.uc-row {
+  border-bottom: 1px solid var(--table-border);
+  transition: background-color 0.15s ease;
+}
+
+.uc-row:last-child {
+  border-bottom: none;
+}
+
+.uc-row:focus-within {
+  background-color: var(--accent-soft);
+}
+
+.uc-header-band {
+  background-color: var(--accent-soft);
+  border-top: 1.5px solid var(--accent-color);
+  border-bottom: 1.5px solid var(--accent-color);
+}
+
+.uc-step-row {
+  background-color: var(--table-row-alt);
+  border-bottom: 1px solid var(--table-border);
+}
+
+.uc-step-row:hover {
+  background-color: var(--accent-soft);
+}
+
+.uc-divider-v {
+  border-left: 1px solid var(--table-border);
+}
+
+.uc-divider-v-strong {
+  border-left: 1.5px solid var(--accent-border);
+}
+
+/* Auto-resizing Textarea fluido sin barras de desplazamiento */
+.auto-textarea {
+  width: 100%;
+  background: transparent;
+  resize: none;
+  overflow: hidden;
+  outline: none;
+  line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.auto-textarea:hover {
+  border-color: var(--table-border);
+}
+
+.auto-textarea:focus {
+  border-color: var(--accent-color);
+  background-color: rgba(var(--accent-rgb), 0.04);
+}
+
+/* Botones e indicadores con el color de acento dinámico */
+.accent-btn {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  box-shadow: 0 4px 14px 0 rgba(var(--accent-rgb), 0.35);
+}
+
+.accent-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.accent-outline-btn {
+  border: 1px solid var(--accent-border);
+  color: var(--text-main);
+  background-color: var(--accent-soft);
+}
+
+.accent-outline-btn:hover {
+  border-color: var(--accent-color);
+  background-color: rgba(var(--accent-rgb), 0.22);
+}
+
+.accent-text {
+  color: var(--accent-color);
+}
+
+.accent-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-color);
+}
+
+/* Checkbox personalizado */
+.custom-checkbox {
+  width: 18px;
+  height: 18px;
+  border: 1.8px solid var(--text-secondary);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.custom-checkbox.checked {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+}
+
+/* Clase utilitaria para modo de exportación limpia (Clonación DOM) */
+.export-mode .no-export {
+  display: none !important;
+}
+
+.export-mode .uc-container {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.export-text-mirror {
+  width: 100%;
+  line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  padding: 2px 6px;
+}
+
+/* Estilos del contenedor de previsualización Mermaid */
+#mermaidPreviewViewport {
+  background-image: radial-gradient(var(--table-border) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+#mermaidSvgContainer svg {
+  max-width: none !important;
+  height: auto !important;
+}
+
+/* Ocultar barra de scroll para pestañas */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
