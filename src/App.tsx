@@ -157,7 +157,7 @@ export default function App() {
     }
 
     const targetTab = tabs.find(t => t.tabId === tabIdToClose);
-    const title = targetTab?.data.id || targetTab?.data.nombre || 'esta pestaña';
+    const title = targetTab?.data.nombre?.trim() || targetTab?.data.id?.trim() || 'esta pestaña';
 
     setConfirmModal({
       isOpen: true,
@@ -260,7 +260,7 @@ export default function App() {
         const text = e.target?.result as string;
         const parsed = JSON.parse(text);
         const result = validateAndSanitizeImportedJson(parsed);
-        const docLabel = result.data.id || result.data.nombre || file.name;
+        const docLabel = result.data.nombre?.trim() || result.data.id?.trim() || file.name;
 
         setConfirmModal({
           isOpen: true,

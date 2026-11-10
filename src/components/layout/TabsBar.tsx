@@ -23,7 +23,7 @@ export function TabsBar({
           {tabs.map(tab => {
             const isActive = tab.tabId === activeTabId;
             const tabTitle =
-              tab.data.id?.trim() || tab.data.nombre?.trim() || 'Nuevo Caso de Uso';
+              tab.data.nombre?.trim() || tab.data.id?.trim() || 'Nuevo Caso de Uso';
 
             return (
               <div
