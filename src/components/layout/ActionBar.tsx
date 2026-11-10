@@ -112,7 +112,7 @@ export function ActionBar({
           <button
             type="button"
             onClick={onResetToDefault}
-            title="Cargar los datos y tema originales de la imagen"
+            title="Restaurar ejemplo predeterminado"
             className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition text-slate-600 dark:text-slate-300"
           >
             <RotateCcw className="w-3.5 h-3.5" />

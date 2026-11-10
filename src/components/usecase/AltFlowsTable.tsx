@@ -25,10 +25,10 @@ export function AltFlowsTable({
     <div id="altFlowsSectionWrapper">
       <div className="uc-header-band grid grid-cols-12 font-bold text-sm">
         <div className="col-span-7 p-2.5 sm:p-3 flex items-center justify-between">
-          <span>Flujos alternativos y excepciones (rutas secundarias / si algo falla)</span>
+          <span>Flujos alternativos y excepciones</span>
         </div>
         <div className="col-span-5 p-2.5 sm:p-3 uc-divider-v-strong flex items-center justify-between">
-          <span>Acción / Resolución ante fallo o alternativa</span>
+          <span>Acción / Resolución</span>
           <button
             type="button"
             onClick={onAddAltFlow}

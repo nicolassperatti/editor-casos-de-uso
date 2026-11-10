@@ -329,7 +329,7 @@ export default function App() {
     try {
       setIsCopyingPng(true);
       await copyUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode);
-      showToast('¡Formulario copiado al portapapeles como PNG!', 'success');
+      showToast('Imagen copiada al portapapeles', 'success');
     } catch {
       try {
         await downloadUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode);

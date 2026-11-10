@@ -30,11 +30,10 @@ export function Header({
           <FileSpreadsheet className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="font-bold text-base sm:text-lg tracking-tight flex items-center gap-2">
+          <h1 className="font-bold text-base sm:text-lg tracking-tight">
             UseCase Studio
-            <span className="text-xs font-mono uppercase px-2 py-0.5 rounded-full accent-outline-btn">Pro</span>
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Especificación estructurada de Casos de Uso</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Especificación de Casos de Uso</p>
         </div>
       </div>
 

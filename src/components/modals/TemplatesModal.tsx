@@ -44,9 +44,9 @@ export function TemplatesModal({ isOpen, onClose, onSelectTemplate }: TemplatesM
               <LayoutTemplate className="w-5 h-5 accent-text" />
             </div>
             <div>
-              <h3 className="font-bold text-lg leading-snug">Catálogo de Plantillas Predefinidas</h3>
+              <h3 className="font-bold text-lg leading-snug">Plantillas de Casos de Uso</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Selecciona una estructura lista para acelerar la documentación de tu sistema
+                Selecciona una plantilla base para comenzar tu especificación
               </p>
             </div>
           </div>

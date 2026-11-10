@@ -187,10 +187,10 @@ export function MermaidModal({
             </div>
             <div>
               <h3 className="font-bold text-base sm:text-lg leading-tight">
-                Generador de Diagrama Mermaid
+                Generador de Diagramas Mermaid
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Ajuste automático multilínea sin recorte de palabras y exportación PNG HD
+                Visualización y exportación de diagramas de flujo y secuencia
               </p>
             </div>
           </div>

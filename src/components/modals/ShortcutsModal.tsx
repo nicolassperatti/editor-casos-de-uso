@@ -9,14 +9,14 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
   if (!isOpen) return null;
 
   const shortcuts = [
-    { key: 'Ctrl + S', desc: 'Guardar con confirmación visual sutil (evita la ventana del navegador)' },
-    { key: 'Ctrl + Z', desc: 'Deshacer (recupera texto, pasos o paleta de color previa)' },
-    { key: 'Ctrl + Y  /  Ctrl + Shift + Z', desc: 'Rehacer última acción deshecha' },
-    { key: 'Ctrl + Alt + N', desc: 'Abrir catálogo de plantillas para nueva pestaña' },
-    { key: 'Ctrl + Shift + D', desc: 'Abrir directamente el generador de Diagramas Mermaid' },
-    { key: 'F2', desc: 'Alternar Modo Zen / Vista de lectura sin barras de herramientas' },
-    { key: '?  /  F1', desc: 'Abrir esta ventana de atajos de teclado' },
-    { key: 'Esc', desc: 'Cerrar cualquier ventana modal activa o salir de Modo Zen' },
+    { key: 'Ctrl + S', desc: 'Confirmar guardado en el navegador' },
+    { key: 'Ctrl + Z', desc: 'Deshacer último cambio' },
+    { key: 'Ctrl + Y  /  Ctrl + Shift + Z', desc: 'Rehacer último cambio deshecho' },
+    { key: 'Ctrl + Alt + N', desc: 'Crear nuevo caso desde plantilla' },
+    { key: 'Ctrl + Shift + D', desc: 'Abrir visor de diagramas Mermaid' },
+    { key: 'F2', desc: 'Alternar Modo Zen (vista limpia)' },
+    { key: '?  /  F1', desc: 'Ver atajos de teclado' },
+    { key: 'Esc', desc: 'Cerrar modal o salir de Modo Zen' },
   ];
 
   return (
@@ -29,7 +29,7 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
             </div>
             <div>
               <h3 className="font-bold text-base sm:text-lg leading-tight">Atajos de Teclado</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Navega y edita a la velocidad de la luz</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Acciones rápidas de navegación y edición</p>
             </div>
           </div>
           <button

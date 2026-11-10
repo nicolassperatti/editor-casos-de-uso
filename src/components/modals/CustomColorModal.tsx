@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Theme } from '../../types/useCase';
-import { Sparkles, X, Trash2 } from 'lucide-react';
+import { Palette, X, Trash2 } from 'lucide-react';
 
 interface CustomColorModalProps {
   isOpen: boolean;
@@ -50,8 +50,8 @@ export function CustomColorModal({
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-lg flex items-center gap-2">
-            <Sparkles className="w-5 h-5 accent-text" />
-            <span>Nuevo Tema Personalizado (HEX)</span>
+            <Palette className="w-5 h-5 accent-text" />
+            <span>Tema Personalizado</span>
           </h3>
           <button
             type="button"
@@ -63,7 +63,7 @@ export function CustomColorModal({
         </div>
 
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-          Ingresa un nombre y un código hexadecimal de color. Se adaptará automáticamente tanto para el modo claro como para el modo oscuro.
+          Define un nombre y un código hexadecimal para personalizar los acentos del documento y la interfaz.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

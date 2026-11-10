@@ -61,29 +61,24 @@ export function StepsTable({
         ))}
       </div>
 
-      {/* Barra inferior para agregar paso rápidamente (se oculta al exportar) */}
-      <div className="no-export uc-row bg-slate-100/70 dark:bg-slate-900/60 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="text-slate-500 dark:text-slate-400">
-          Puedes reordenar, insertar o eliminar pasos en la ruta principal, o añadir flujos alternativos si algo falla.
-        </span>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onAddAltFlow}
-            className="font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 py-0.5"
-          >
-            <GitPullRequestDraft className="w-3.5 h-3.5" />
-            <span>+ Flujo Alternativo / Excepción</span>
-          </button>
-          <button
-            type="button"
-            onClick={onAddStep}
-            className="font-semibold accent-text hover:underline flex items-center gap-1 py-0.5"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Agregar nuevo paso al final</span>
-          </button>
-        </div>
+      {/* Barra inferior para acciones de pasos (se oculta al exportar) */}
+      <div className="no-export uc-row bg-slate-100/70 dark:bg-slate-900/60 px-3 py-1.5 flex flex-wrap items-center justify-end gap-3 text-xs">
+        <button
+          type="button"
+          onClick={onAddAltFlow}
+          className="font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 py-0.5"
+        >
+          <GitPullRequestDraft className="w-3.5 h-3.5" />
+          <span>+ Flujo Alternativo / Excepción</span>
+        </button>
+        <button
+          type="button"
+          onClick={onAddStep}
+          className="font-semibold accent-text hover:underline flex items-center gap-1 py-0.5"
+        >
+          <PlusCircle className="w-3.5 h-3.5" />
+          <span>Agregar nuevo paso</span>
+        </button>
       </div>
     </>
   );
