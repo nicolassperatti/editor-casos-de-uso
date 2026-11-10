@@ -97,11 +97,11 @@ describe('Servicios de Dominio - Mermaid y Exportación', () => {
         nombre: 'Caso Parcial',
         pasos: [{ accion: 'Hacer algo', info: '' }],
       };
-      const validated = validateAndSanitizeImportedJson(incomplete);
-      expect(validated.nombre).toBe('Caso Parcial');
-      expect(validated.prioridad).toBe('Media');
-      expect(validated.tipoDesencadenador.externo).toBe(true);
-      expect(validated.pasos[0].id).toBeDefined();
+      const result = validateAndSanitizeImportedJson(incomplete);
+      expect(result.data.nombre).toBe('Caso Parcial');
+      expect(result.data.prioridad).toBe('Media');
+      expect(result.data.tipoDesencadenador.externo).toBe(true);
+      expect(result.data.pasos[0].id).toBeDefined();
     });
   });
 

@@ -2,30 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Theme } from '../types/useCase';
 import { BASE_THEMES, applyThemeCssVariables, STORAGE_KEYS } from '../constants/themes';
 
-export function useTheme() {
+export function useTheme(activeThemeId: string, isDarkMode: boolean) {
   const [customThemes, setCustomThemes] = useState<Theme[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CUSTOM_THEMES);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
-    }
-  });
-
-  const [activeThemeId, setActiveThemeId] = useState<string>(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.ACTIVE_THEME) || BASE_THEMES[0].id;
-    } catch {
-      return BASE_THEMES[0].id;
-    }
-  });
-
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
-      return saved !== null ? JSON.parse(saved) : true;
-    } catch {
-      return true;
     }
   });
 
@@ -37,34 +20,13 @@ export function useTheme() {
     return allThemes.find(t => t.id === activeThemeId) || BASE_THEMES[0];
   }, [allThemes, activeThemeId]);
 
-  // Sincronizar variables CSS y clase dark en el elemento raíz
+  // Sincronizar variables CSS y clase dark en el elemento raíz cada vez que cambie de pestaña o de tema
   useEffect(() => {
     applyThemeCssVariables(activeTheme, isDarkMode);
   }, [activeTheme, isDarkMode]);
 
-  const selectTheme = useCallback((themeId: string) => {
-    setActiveThemeId(themeId);
-    try {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_THEME, themeId);
-    } catch (e) {
-      console.warn('Error al guardar tema activo:', e);
-    }
-  }, []);
-
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode(prev => {
-      const next = !prev;
-      try {
-        localStorage.setItem(STORAGE_KEYS.DARK_MODE, JSON.stringify(next));
-      } catch (e) {
-        console.warn('Error al guardar modo oscuro:', e);
-      }
-      return next;
-    });
-  }, []);
-
   const saveCustomTheme = useCallback(
-    (name: string, rawHex: string): { success: boolean; error?: string } => {
+    (name: string, rawHex: string): { success: boolean; themeId?: string; error?: string } => {
       let hex = (rawHex || '').trim();
       if (!hex.startsWith('#')) hex = '#' + hex;
 
@@ -91,10 +53,9 @@ export function useTheme() {
         return updated;
       });
 
-      selectTheme(newTheme.id);
-      return { success: true };
+      return { success: true, themeId: newTheme.id };
     },
-    [customThemes.length, selectTheme]
+    [customThemes.length]
   );
 
   const deleteCustomTheme = useCallback(
@@ -108,21 +69,13 @@ export function useTheme() {
         }
         return updated;
       });
-
-      if (activeThemeId === themeId) {
-        selectTheme(BASE_THEMES[0].id);
-      }
     },
-    [activeThemeId, selectTheme]
+    []
   );
 
   return {
     allThemes,
     activeTheme,
-    activeThemeId,
-    isDarkMode,
-    selectTheme,
-    toggleDarkMode,
     saveCustomTheme,
     deleteCustomTheme,
   };

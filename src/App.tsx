@@ -8,7 +8,7 @@ import { TabsBar } from './components/layout/TabsBar';
 import { UseCaseSheet } from './components/usecase/UseCaseSheet';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { CustomColorModal } from './components/modals/CustomColorModal';
-import { ConfirmationModal } from './components/modals/ConfirmationModal';
+import { ConfirmationModal, type ConfirmModalButton } from './components/modals/ConfirmationModal';
 import { MermaidModal } from './components/modals/mermaid/MermaidModal';
 import {
   exportUseCaseToJson,
@@ -20,33 +20,33 @@ import {
 
 export default function App() {
   const {
-    allThemes,
-    activeTheme,
-    activeThemeId,
-    isDarkMode,
-    selectTheme,
-    toggleDarkMode,
-    saveCustomTheme,
-    deleteCustomTheme,
-  } = useTheme();
-
-  const {
     tabs,
     activeTabId,
     currentData,
+    currentThemeId,
+    currentDarkMode,
     saveIndicator,
     canUndo,
     canRedo,
     undo,
     redo,
     updateCurrentData,
+    updateCurrentTheme,
+    updateCurrentDarkMode,
     createNewTab,
     closeTab,
     switchTab,
     resetToDefaultExample,
     clearAllFields,
     importJsonData,
-  } = useTabsManager(activeThemeId, isDarkMode);
+  } = useTabsManager();
+
+  const {
+    allThemes,
+    activeTheme,
+    saveCustomTheme,
+    deleteCustomTheme,
+  } = useTheme(currentThemeId, currentDarkMode);
 
   const { toasts, showToast, removeToast } = useToast();
 
@@ -57,69 +57,166 @@ export default function App() {
   const [isCopyingPng, setIsCopyingPng] = useState(false);
   const [isDownloadingPng, setIsDownloadingPng] = useState(false);
 
-  // Estado para el modal de confirmación desacoplado
+  // Estado para el modal de confirmación dinámico (2 o 3 opciones)
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
     message: string;
-    isDanger: boolean;
-    onConfirm: () => void;
+    buttons: ConfirmModalButton[];
   }>({
     isOpen: false,
     title: '',
     message: '',
-    isDanger: false,
-    onConfirm: () => {},
+    buttons: [],
   });
 
-  // Acciones con diálogo de confirmación
+  const closeConfirmationDialog = () => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+  };
+
+  // 1. Confirmación de Cerrar Pestaña
+  const handleCloseTabRequest = (tabIdToClose: string) => {
+    if (tabs.length <= 1) {
+      showToast('Debe permanecer al menos una pestaña abierta', 'info');
+      return;
+    }
+
+    const targetTab = tabs.find(t => t.tabId === tabIdToClose);
+    const title = targetTab?.data.id || targetTab?.data.nombre || 'esta pestaña';
+
+    setConfirmModal({
+      isOpen: true,
+      title: '¿Cerrar esta pestaña?',
+      message: `Se cerrará la pestaña "${title}" y se descartarán sus datos si no los has exportado como JSON.`,
+      buttons: [
+        {
+          label: 'Cancelar',
+          style: 'cancel',
+          onClick: closeConfirmationDialog,
+        },
+        {
+          label: 'Cerrar Pestaña',
+          style: 'danger',
+          onClick: () => {
+            closeConfirmationDialog();
+            closeTab(tabIdToClose);
+            showToast('Pestaña cerrada', 'info');
+          },
+        },
+      ],
+    });
+  };
+
+  // 2. Confirmación de Restaurar Ejemplo (3 opciones)
   const handleResetToDefault = () => {
     setConfirmModal({
       isOpen: true,
-      title: '¿Restaurar datos de ejemplo?',
-      message: 'Se reemplazarán los datos actuales de esta pestaña con los datos originales del ejemplo de la imagen.',
-      isDanger: false,
-      onConfirm: () => {
-        resetToDefaultExample();
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        showToast('Datos originales de ejemplo restaurados', 'info');
-      },
+      title: '¿Restaurar el ejemplo original?',
+      message:
+        'Esto cargará los datos del ejemplo original ("Estudiante UC 005") y restablecerá el color al tema original (Rosa Neón). ¿Deseas reemplazar la pestaña actual o abrirlo en una pestaña nueva?',
+      buttons: [
+        {
+          label: 'Cancelar',
+          style: 'cancel',
+          onClick: closeConfirmationDialog,
+        },
+        {
+          label: 'Abrir en Nueva Pestaña',
+          style: 'accent-outline',
+          onClick: () => {
+            closeConfirmationDialog();
+            resetToDefaultExample(true);
+            showToast('Ejemplo original abierto en nueva pestaña', 'success');
+          },
+        },
+        {
+          label: 'Reemplazar Pestaña Actual',
+          style: 'accent',
+          onClick: () => {
+            closeConfirmationDialog();
+            resetToDefaultExample(false);
+            showToast('Se restauraron los datos y el tema original (Rosa Neón)', 'info');
+          },
+        },
+      ],
     });
   };
 
+  // 3. Confirmación de Nuevo en Blanco (3 opciones)
   const handleClearAll = () => {
     setConfirmModal({
       isOpen: true,
-      title: '¿Crear nuevo en blanco?',
-      message: 'Se vaciarán todos los campos de esta pestaña para iniciar una nueva especificación desde cero.',
-      isDanger: true,
-      onConfirm: () => {
-        clearAllFields();
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        showToast('Formulario vaciado para nuevo caso de uso', 'info');
-      },
+      title: '¿Limpiar formulario actual o crear pestaña?',
+      message:
+        'Si limpias la pestaña actual se borrará su contenido (aunque podrás recuperarlo con Deshacer). También puedes abrir directamente una nueva pestaña en blanco.',
+      buttons: [
+        {
+          label: 'Cancelar',
+          style: 'cancel',
+          onClick: closeConfirmationDialog,
+        },
+        {
+          label: 'Abrir en Nueva Pestaña',
+          style: 'accent-outline',
+          onClick: () => {
+            closeConfirmationDialog();
+            clearAllFields(true);
+            showToast('Nueva pestaña en blanco creada', 'success');
+          },
+        },
+        {
+          label: 'Limpiar Pestaña Actual',
+          style: 'danger',
+          onClick: () => {
+            closeConfirmationDialog();
+            clearAllFields(false);
+            showToast('Formulario en blanco listo para editar', 'info');
+          },
+        },
+      ],
     });
   };
 
-  const handleExportJSON = () => {
-    try {
-      exportUseCaseToJson(currentData);
-      showToast('Archivo JSON exportado correctamente', 'success');
-    } catch (e) {
-      console.error(e);
-      showToast('Error al exportar el archivo JSON', 'error');
-    }
-  };
-
+  // 4. Confirmación de Importar JSON (3 opciones)
   const handleImportJSON = (file: File) => {
     const reader = new FileReader();
     reader.onload = e => {
       try {
         const text = e.target?.result as string;
         const parsed = JSON.parse(text);
-        const sanitized = validateAndSanitizeImportedJson(parsed);
-        importJsonData(sanitized);
-        showToast('Caso de uso importado con éxito', 'success');
+        const result = validateAndSanitizeImportedJson(parsed);
+        const docLabel = result.data.id || result.data.nombre || file.name;
+
+        setConfirmModal({
+          isOpen: true,
+          title: '¿Cómo deseas importar este archivo JSON?',
+          message: `Estás por cargar "${docLabel}". Si reemplazas la pestaña actual se sobrescribirá lo que tienes en pantalla (puedes usar Deshacer), o puedes abrirlo en una pestaña nueva sin tocar la actual.`,
+          buttons: [
+            {
+              label: 'Cancelar',
+              style: 'cancel',
+              onClick: closeConfirmationDialog,
+            },
+            {
+              label: 'Abrir en Nueva Pestaña',
+              style: 'accent-outline',
+              onClick: () => {
+                closeConfirmationDialog();
+                importJsonData(result.data, result.theme, result.darkMode, true);
+                showToast('JSON importado en una nueva pestaña', 'success');
+              },
+            },
+            {
+              label: 'Reemplazar Pestaña Actual',
+              style: 'accent',
+              onClick: () => {
+                closeConfirmationDialog();
+                importJsonData(result.data, result.theme, result.darkMode, false);
+                showToast('Caso de uso importado correctamente', 'success');
+              },
+            },
+          ],
+        });
       } catch (err) {
         console.error(err);
         showToast('El archivo JSON no tiene un formato válido', 'error');
@@ -128,17 +225,35 @@ export default function App() {
     reader.readAsText(file);
   };
 
+  const handleExportJSON = () => {
+    try {
+      exportUseCaseToJson(currentData, currentThemeId, currentDarkMode);
+      showToast('Archivo JSON exportado correctamente', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('Error al exportar el archivo JSON', 'error');
+    }
+  };
+
+  const handleSaveCustomTheme = (name: string, hex: string) => {
+    const res = saveCustomTheme(name, hex);
+    if (res.success && res.themeId) {
+      updateCurrentTheme(res.themeId);
+      showToast(`Tema "${name}" guardado y aplicado a esta pestaña`, 'success');
+    }
+    return res;
+  };
+
   const handleCopyPNG = async () => {
     if (!sheetRef.current) return;
     try {
       setIsCopyingPng(true);
-      await copyUseCaseAsPNG(sheetRef.current, currentData, isDarkMode);
+      await copyUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode);
       showToast('¡Formulario copiado al portapapeles como PNG!', 'success');
     } catch {
-      // Fallback a descarga si el navegador restringe portapapeles
       try {
-        await downloadUseCaseAsPNG(sheetRef.current, currentData, isDarkMode);
-        showToast('Se descargó el PNG (portapapeles restringido)', 'info');
+        await downloadUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode);
+        showToast('Se descargó el PNG automáticamente (portapapeles restringido)', 'info');
       } catch (err) {
         console.error(err);
         showToast('Error al exportar imagen PNG', 'error');
@@ -152,7 +267,7 @@ export default function App() {
     if (!sheetRef.current) return;
     try {
       setIsDownloadingPng(true);
-      await downloadUseCaseAsPNG(sheetRef.current, currentData, isDarkMode);
+      await downloadUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode);
       showToast('Imagen PNG descargada con éxito', 'success');
     } catch (err) {
       console.error(err);
@@ -166,7 +281,7 @@ export default function App() {
     if (!sheetRef.current) return;
     try {
       setIsExportingPdf(true);
-      await exportUseCaseToPDF(sheetRef.current, currentData, isDarkMode);
+      await exportUseCaseToPDF(sheetRef.current, currentData, currentDarkMode);
       showToast('PDF exportado sin cortes ni duplicación de filas', 'success');
     } catch (err) {
       console.error(err);
@@ -178,14 +293,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-      {/* Barra Superior con Marca, Temas y Modo Oscuro */}
+      {/* Barra Superior con Marca, Temas y Modo Oscuro (específicos de la pestaña activa) */}
       <header className="sticky top-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/85 border-b border-slate-200 dark:border-slate-800 shadow-sm">
         <Header
           allThemes={allThemes}
-          activeThemeId={activeThemeId}
-          isDarkMode={isDarkMode}
-          onSelectTheme={selectTheme}
-          onToggleDarkMode={toggleDarkMode}
+          activeThemeId={currentThemeId}
+          isDarkMode={currentDarkMode}
+          onSelectTheme={updateCurrentTheme}
+          onToggleDarkMode={() => updateCurrentDarkMode(!currentDarkMode)}
           onOpenCustomColorModal={() => setIsCustomColorModalOpen(true)}
         />
 
@@ -211,8 +326,11 @@ export default function App() {
           tabs={tabs}
           activeTabId={activeTabId}
           onSwitchTab={switchTab}
-          onCloseTab={closeTab}
-          onCreateNewTab={() => createNewTab()}
+          onCloseTab={handleCloseTabRequest}
+          onCreateNewTab={() => {
+            createNewTab();
+            showToast('Nueva pestaña creada', 'success');
+          }}
         />
       </header>
 
@@ -228,7 +346,7 @@ export default function App() {
       <CustomColorModal
         isOpen={isCustomColorModalOpen}
         onClose={() => setIsCustomColorModalOpen(false)}
-        onSaveTheme={saveCustomTheme}
+        onSaveTheme={handleSaveCustomTheme}
         customThemes={allThemes.filter(t => t.isCustom)}
         onDeleteCustomTheme={deleteCustomTheme}
       />
@@ -237,9 +355,8 @@ export default function App() {
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
         message={confirmModal.message}
-        isDanger={confirmModal.isDanger}
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        buttons={confirmModal.buttons}
+        onClose={closeConfirmationDialog}
       />
 
       <MermaidModal
@@ -247,7 +364,7 @@ export default function App() {
         onClose={() => setIsMermaidModalOpen(false)}
         data={currentData}
         activeTheme={activeTheme}
-        isDarkMode={isDarkMode}
+        isDarkMode={currentDarkMode}
         onShowToast={showToast}
       />
 

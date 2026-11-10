@@ -2,11 +2,38 @@ import type { UseCaseData, Step, AltFlow } from '../../types/useCase';
 import { getSanitizedFilename } from './prepareClone';
 import { createStep } from '../../constants/defaultData';
 
+export interface UseCaseExportPayload {
+  version: string;
+  exportedAt: string;
+  theme: string;
+  darkMode: boolean;
+  data: UseCaseData;
+}
+
+export interface ImportedUseCaseResult {
+  data: UseCaseData;
+  theme?: string;
+  darkMode?: boolean;
+}
+
 /**
- * Descarga los datos del caso de uso como archivo JSON formateado.
+ * Descarga los datos del caso de uso como archivo JSON formateado
+ * incluyendo el tema y modo de visualización correspondiente a la pestaña.
  */
-export function exportUseCaseToJson(data: UseCaseData): void {
-  const jsonStr = JSON.stringify(data, null, 2);
+export function exportUseCaseToJson(
+  data: UseCaseData,
+  theme = 'neon-pink',
+  darkMode = true
+): void {
+  const payload: UseCaseExportPayload = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    theme,
+    darkMode,
+    data,
+  };
+
+  const jsonStr = JSON.stringify(payload, null, 2);
   const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -20,17 +47,22 @@ export function exportUseCaseToJson(data: UseCaseData): void {
 
 /**
  * Valida y normaliza datos importados desde un archivo JSON.
- * Asegura que todos los campos requeridos y arrays de pasos existan con sus IDs.
+ * Compatible tanto con archivos que tienen estructura completa { version, theme, darkMode, data }
+ * como con archivos que contienen directamente el objeto UseCaseData.
  */
-export function validateAndSanitizeImportedJson(raw: unknown): UseCaseData {
+export function validateAndSanitizeImportedJson(raw: unknown): ImportedUseCaseResult {
   if (typeof raw !== 'object' || raw === null) {
     throw new Error('El contenido del archivo no es un objeto JSON válido');
   }
 
-  const obj = raw as Record<string, unknown>;
+  const root = raw as Record<string, unknown>;
+  const rawData =
+    typeof root.data === 'object' && root.data !== null
+      ? (root.data as Record<string, unknown>)
+      : root;
 
-  const pasos: Step[] = Array.isArray(obj.pasos)
-    ? obj.pasos.map((p, idx) => {
+  const pasos: Step[] = Array.isArray(rawData.pasos)
+    ? rawData.pasos.map((p, idx) => {
         const item = (typeof p === 'object' && p !== null ? p : {}) as Record<string, unknown>;
         return {
           id: typeof item.id === 'string' && item.id ? item.id : `step-${idx + 1}-${Date.now()}`,
@@ -40,8 +72,8 @@ export function validateAndSanitizeImportedJson(raw: unknown): UseCaseData {
       })
     : [createStep('Paso 1')];
 
-  const flujosAlternativos: AltFlow[] = Array.isArray(obj.flujosAlternativos)
-    ? obj.flujosAlternativos.map((a, idx) => {
+  const flujosAlternativos: AltFlow[] = Array.isArray(rawData.flujosAlternativos)
+    ? rawData.flujosAlternativos.map((a, idx) => {
         const item = (typeof a === 'object' && a !== null ? a : {}) as Record<string, unknown>;
         return {
           id: typeof item.id === 'string' && item.id ? item.id : `alt-${idx + 1}-${Date.now()}`,
@@ -56,29 +88,38 @@ export function validateAndSanitizeImportedJson(raw: unknown): UseCaseData {
     externo: true,
     temporal: false,
   };
-  if (typeof obj.tipoDesencadenador === 'object' && obj.tipoDesencadenador !== null) {
-    const td = obj.tipoDesencadenador as Record<string, unknown>;
+  if (typeof rawData.tipoDesencadenador === 'object' && rawData.tipoDesencadenador !== null) {
+    const td = rawData.tipoDesencadenador as Record<string, unknown>;
     tipoDesencadenador.externo = Boolean(td.externo);
     tipoDesencadenador.temporal = Boolean(td.temporal);
   }
 
-  return {
-    nombre: typeof obj.nombre === 'string' ? obj.nombre : '',
-    id: typeof obj.id === 'string' ? obj.id : '',
-    area: typeof obj.area === 'string' ? obj.area : '',
-    actores: typeof obj.actores === 'string' ? obj.actores : '',
-    actoresSecundarios: typeof obj.actoresSecundarios === 'string' ? obj.actoresSecundarios : '',
-    descripcion: typeof obj.descripcion === 'string' ? obj.descripcion : '',
-    evento: typeof obj.evento === 'string' ? obj.evento : '',
+  const cleanData: UseCaseData = {
+    nombre: typeof rawData.nombre === 'string' ? rawData.nombre : '',
+    id: typeof rawData.id === 'string' ? rawData.id : '',
+    area: typeof rawData.area === 'string' ? rawData.area : '',
+    actores: typeof rawData.actores === 'string' ? rawData.actores : '',
+    actoresSecundarios: typeof rawData.actoresSecundarios === 'string' ? rawData.actoresSecundarios : '',
+    descripcion: typeof rawData.descripcion === 'string' ? rawData.descripcion : '',
+    evento: typeof rawData.evento === 'string' ? rawData.evento : '',
     tipoDesencadenador,
     pasos: pasos.length > 0 ? pasos : [createStep()],
     flujosAlternativos,
-    precondiciones: typeof obj.precondiciones === 'string' ? obj.precondiciones : '',
-    postcondiciones: typeof obj.postcondiciones === 'string' ? obj.postcondiciones : '',
-    suposiciones: typeof obj.suposiciones === 'string' ? obj.suposiciones : '',
-    requerimientos: typeof obj.requerimientos === 'string' ? obj.requerimientos : '',
-    cuestiones: typeof obj.cuestiones === 'string' ? obj.cuestiones : '',
-    prioridad: typeof obj.prioridad === 'string' ? obj.prioridad : 'Media',
-    riesgo: typeof obj.riesgo === 'string' ? obj.riesgo : 'Medio',
+    precondiciones: typeof rawData.precondiciones === 'string' ? rawData.precondiciones : '',
+    postcondiciones: typeof rawData.postcondiciones === 'string' ? rawData.postcondiciones : '',
+    suposiciones: typeof rawData.suposiciones === 'string' ? rawData.suposiciones : '',
+    requerimientos: typeof rawData.requerimientos === 'string' ? rawData.requerimientos : '',
+    cuestiones: typeof rawData.cuestiones === 'string' ? rawData.cuestiones : '',
+    prioridad: typeof rawData.prioridad === 'string' ? rawData.prioridad : 'Media',
+    riesgo: typeof rawData.riesgo === 'string' ? rawData.riesgo : 'Medio',
+  };
+
+  const theme = typeof root.theme === 'string' ? root.theme : undefined;
+  const darkMode = typeof root.darkMode === 'boolean' ? root.darkMode : undefined;
+
+  return {
+    data: cleanData,
+    theme,
+    darkMode,
   };
 }
