@@ -4,6 +4,7 @@ import { AutoResizeTextarea } from '../ui/AutoResizeTextarea';
 import { QuickChips } from '../ui/QuickChips';
 import { StepsTable } from './StepsTable';
 import { AltFlowsTable } from './AltFlowsTable';
+import { ComplexityBadge } from './ComplexityBadge';
 import { createStep, createAltFlow } from '../../constants/defaultData';
 
 interface UseCaseSheetProps {
@@ -121,8 +122,8 @@ export const UseCaseSheet = forwardRef<HTMLDivElement, UseCaseSheetProps>(
 
     return (
       <main className="flex-1 max-w-5xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8">
-        {/* Nota informativa sutil */}
-        <div className="mb-4 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+        {/* Nota informativa sutil y métricas de complejidad */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 px-1">
           <span className="flex items-center gap-1.5">
             <span
               className="w-2 h-2 rounded-full"
@@ -130,7 +131,10 @@ export const UseCaseSheet = forwardRef<HTMLDivElement, UseCaseSheetProps>(
             />
             Haz clic en cualquier campo para editar. El texto largo baja automáticamente sin cortarse.
           </span>
-          <span className="font-mono text-[11px] opacity-80">{saveIndicator}</span>
+          <div className="flex items-center gap-3">
+            <ComplexityBadge data={data} />
+            <span className="font-mono text-[11px] opacity-80">{saveIndicator}</span>
+          </div>
         </div>
 
         {/* CONTENEDOR CAPTURABLE DEL FORMULARIO DE CASO DE USO */}

@@ -65,7 +65,7 @@ export function TabsBar({
         <button
           type="button"
           onClick={onCreateNewTab}
-          title="Crear nueva pestaña de Caso de Uso"
+          title="Crear nueva pestaña o elegir plantilla (Ctrl+Alt+N)"
           className="mb-1 px-2.5 py-1 rounded-lg text-xs font-semibold accent-outline-btn flex items-center gap-1 shrink-0 transition"
         >
           <Plus className="w-3.5 h-3.5" />

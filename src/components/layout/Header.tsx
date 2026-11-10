@@ -1,5 +1,5 @@
 import type { Theme } from '../../types/useCase';
-import { FileSpreadsheet, Palette, Moon, Sun } from 'lucide-react';
+import { FileSpreadsheet, Palette, Moon, Sun, Maximize2, HelpCircle } from 'lucide-react';
 
 interface HeaderProps {
   allThemes: Theme[];
@@ -8,6 +8,8 @@ interface HeaderProps {
   onSelectTheme: (themeId: string) => void;
   onToggleDarkMode: () => void;
   onOpenCustomColorModal: () => void;
+  onToggleZenMode: () => void;
+  onOpenShortcutsModal: () => void;
 }
 
 export function Header({
@@ -17,6 +19,8 @@ export function Header({
   onSelectTheme,
   onToggleDarkMode,
   onOpenCustomColorModal,
+  onToggleZenMode,
+  onOpenShortcutsModal,
 }: HeaderProps) {
   return (
     <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
@@ -34,7 +38,7 @@ export function Header({
         </div>
       </div>
 
-      {/* Controles de Temas y Modo Claro/Oscuro */}
+      {/* Controles de Temas, Modo Claro/Oscuro, Zen y Ayuda */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {/* Selector de Temas de Color */}
         <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/90 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
@@ -94,6 +98,27 @@ export function Header({
             <Sun className="w-4 h-4 text-amber-500" />
           )}
           <span className="hidden sm:inline">{isDarkMode ? 'Oscuro' : 'Claro'}</span>
+        </button>
+
+        {/* Botón Modo Zen (Lectura Limpia) */}
+        <button
+          type="button"
+          onClick={onToggleZenMode}
+          title="Modo Zen / Vista de lectura sin barras de herramientas (F2)"
+          className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1 text-xs font-medium"
+        >
+          <Maximize2 className="w-4 h-4" />
+          <span className="hidden lg:inline">Zen</span>
+        </button>
+
+        {/* Botón Ayuda de Atajos de Teclado */}
+        <button
+          type="button"
+          onClick={onOpenShortcutsModal}
+          title="Ver atajos de teclado (?)"
+          className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 transition text-xs font-medium"
+        >
+          <HelpCircle className="w-4 h-4 accent-text" />
         </button>
       </div>
     </div>

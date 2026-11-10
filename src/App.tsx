@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useTabsManager } from './hooks/useTabsManager';
 import { useToast } from './hooks/useToast';
@@ -10,6 +10,10 @@ import { ToastContainer } from './components/ui/ToastContainer';
 import { CustomColorModal } from './components/modals/CustomColorModal';
 import { ConfirmationModal, type ConfirmModalButton } from './components/modals/ConfirmationModal';
 import { MermaidModal } from './components/modals/mermaid/MermaidModal';
+import { TemplatesModal } from './components/modals/TemplatesModal';
+import { ShortcutsModal } from './components/modals/ShortcutsModal';
+import type { UseCaseTemplate } from './constants/templates';
+import { Minimize2 } from 'lucide-react';
 import {
   exportUseCaseToJson,
   validateAndSanitizeImportedJson,
@@ -53,6 +57,10 @@ export default function App() {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [isCustomColorModalOpen, setIsCustomColorModalOpen] = useState(false);
   const [isMermaidModalOpen, setIsMermaidModalOpen] = useState(false);
+  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const [isZenMode, setIsZenMode] = useState(false);
+
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isCopyingPng, setIsCopyingPng] = useState(false);
   const [isDownloadingPng, setIsDownloadingPng] = useState(false);
@@ -73,6 +81,73 @@ export default function App() {
   const closeConfirmationDialog = () => {
     setConfirmModal(prev => ({ ...prev, isOpen: false }));
   };
+
+  // Listener global para atajos de teclado extendidos
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isEditingText = targetTag === 'input' || targetTag === 'textarea';
+
+      // 1. Escape: cerrar cualquier modal o salir de Zen Mode
+      if (e.key === 'Escape') {
+        if (isCustomColorModalOpen) setIsCustomColorModalOpen(false);
+        else if (isMermaidModalOpen) setIsMermaidModalOpen(false);
+        else if (isTemplatesModalOpen) setIsTemplatesModalOpen(false);
+        else if (isShortcutsModalOpen) setIsShortcutsModalOpen(false);
+        else if (confirmModal.isOpen) closeConfirmationDialog();
+        else if (isZenMode) setIsZenMode(false);
+        return;
+      }
+
+      // 2. F2: Alternar Modo Zen
+      if (e.key === 'F2') {
+        e.preventDefault();
+        setIsZenMode(prev => !prev);
+        return;
+      }
+
+      // 3. Ctrl + S: Guardar con feedback visual
+      if (isCtrlOrMeta && key === 's') {
+        e.preventDefault();
+        showToast('✓ Guardado automático activo en el navegador', 'success');
+        return;
+      }
+
+      // 4. Ctrl + Alt + N: Abrir catálogo de plantillas
+      if (isCtrlOrMeta && e.altKey && key === 'n') {
+        e.preventDefault();
+        setIsTemplatesModalOpen(true);
+        return;
+      }
+
+      // 5. Ctrl + Shift + D: Abrir Diagrama Mermaid
+      if (isCtrlOrMeta && e.shiftKey && key === 'd') {
+        e.preventDefault();
+        setIsMermaidModalOpen(true);
+        return;
+      }
+
+      // 6. F1 o '?' fuera de inputs: Abrir ayuda de atajos
+      if (e.key === 'F1' || (e.key === '?' && !isEditingText)) {
+        e.preventDefault();
+        setIsShortcutsModalOpen(true);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [
+    isCustomColorModalOpen,
+    isMermaidModalOpen,
+    isTemplatesModalOpen,
+    isShortcutsModalOpen,
+    confirmModal.isOpen,
+    isZenMode,
+    showToast,
+  ]);
 
   // 1. Confirmación de Cerrar Pestaña
   const handleCloseTabRequest = (tabIdToClose: string) => {
@@ -244,6 +319,11 @@ export default function App() {
     return res;
   };
 
+  const handleSelectTemplate = (template: UseCaseTemplate) => {
+    createNewTab(template.data, template.theme, currentDarkMode);
+    showToast(`Plantilla "${template.title}" creada en nueva pestaña`, 'success');
+  };
+
   const handleCopyPNG = async () => {
     if (!sheetRef.current) return;
     try {
@@ -292,47 +372,62 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-      {/* Barra Superior con Marca, Temas y Modo Oscuro (específicos de la pestaña activa) */}
-      <header className="sticky top-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/85 border-b border-slate-200 dark:border-slate-800 shadow-sm">
-        <Header
-          allThemes={allThemes}
-          activeThemeId={currentThemeId}
-          isDarkMode={currentDarkMode}
-          onSelectTheme={updateCurrentTheme}
-          onToggleDarkMode={() => updateCurrentDarkMode(!currentDarkMode)}
-          onOpenCustomColorModal={() => setIsCustomColorModalOpen(true)}
-        />
+    <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 relative">
+      {/* Botón flotante para salir de Modo Zen */}
+      {isZenMode && (
+        <div className="fixed top-4 right-4 z-40 animate-in fade-in duration-200">
+          <button
+            type="button"
+            onClick={() => setIsZenMode(false)}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-1.5 accent-text hover:brightness-110 transition"
+          >
+            <Minimize2 className="w-4 h-4" />
+            <span>Salir de Modo Zen (F2)</span>
+          </button>
+        </div>
+      )}
 
-        <ActionBar
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onUndo={undo}
-          onRedo={redo}
-          onExportJSON={handleExportJSON}
-          onImportJSON={handleImportJSON}
-          onResetToDefault={handleResetToDefault}
-          onClearAll={handleClearAll}
-          onOpenMermaidModal={() => setIsMermaidModalOpen(true)}
-          onCopyPNG={handleCopyPNG}
-          onDownloadPNG={handleDownloadPNG}
-          onExportPDF={handleExportPDF}
-          isExportingPdf={isExportingPdf}
-          isCopyingPng={isCopyingPng}
-          isDownloadingPng={isDownloadingPng}
-        />
+      {/* Barra Superior con Marca, Temas y Modo Oscuro (se oculta en Modo Zen) */}
+      {!isZenMode && (
+        <header className="sticky top-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/85 border-b border-slate-200 dark:border-slate-800 shadow-sm animate-in fade-in duration-150">
+          <Header
+            allThemes={allThemes}
+            activeThemeId={currentThemeId}
+            isDarkMode={currentDarkMode}
+            onSelectTheme={updateCurrentTheme}
+            onToggleDarkMode={() => updateCurrentDarkMode(!currentDarkMode)}
+            onOpenCustomColorModal={() => setIsCustomColorModalOpen(true)}
+            onToggleZenMode={() => setIsZenMode(true)}
+            onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
+          />
 
-        <TabsBar
-          tabs={tabs}
-          activeTabId={activeTabId}
-          onSwitchTab={switchTab}
-          onCloseTab={handleCloseTabRequest}
-          onCreateNewTab={() => {
-            createNewTab();
-            showToast('Nueva pestaña creada', 'success');
-          }}
-        />
-      </header>
+          <ActionBar
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={undo}
+            onRedo={redo}
+            onExportJSON={handleExportJSON}
+            onImportJSON={handleImportJSON}
+            onResetToDefault={handleResetToDefault}
+            onClearAll={handleClearAll}
+            onOpenMermaidModal={() => setIsMermaidModalOpen(true)}
+            onCopyPNG={handleCopyPNG}
+            onDownloadPNG={handleDownloadPNG}
+            onExportPDF={handleExportPDF}
+            isExportingPdf={isExportingPdf}
+            isCopyingPng={isCopyingPng}
+            isDownloadingPng={isDownloadingPng}
+          />
+
+          <TabsBar
+            tabs={tabs}
+            activeTabId={activeTabId}
+            onSwitchTab={switchTab}
+            onCloseTab={handleCloseTabRequest}
+            onCreateNewTab={() => setIsTemplatesModalOpen(true)}
+          />
+        </header>
+      )}
 
       {/* Hoja Principal de Especificación de Caso de Uso */}
       <UseCaseSheet
@@ -343,6 +438,17 @@ export default function App() {
       />
 
       {/* Modales */}
+      <TemplatesModal
+        isOpen={isTemplatesModalOpen}
+        onClose={() => setIsTemplatesModalOpen(false)}
+        onSelectTemplate={handleSelectTemplate}
+      />
+
+      <ShortcutsModal
+        isOpen={isShortcutsModalOpen}
+        onClose={() => setIsShortcutsModalOpen(false)}
+      />
+
       <CustomColorModal
         isOpen={isCustomColorModalOpen}
         onClose={() => setIsCustomColorModalOpen(false)}
