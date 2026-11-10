@@ -7,7 +7,7 @@ export function configureMermaidEngine(activeTheme: Theme, isDarkMode: boolean):
 
   mermaid.initialize({
     startOnLoad: false,
-    securityLevel: 'loose',
+    securityLevel: 'antiscript',
     theme: isDarkMode ? 'dark' : 'default',
     fontFamily: 'Inter, sans-serif',
     flowchart: {
