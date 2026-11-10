@@ -6,7 +6,7 @@ import { STORAGE_KEYS, BASE_THEMES } from '../constants/themes';
 const MAX_HISTORY_STEPS = 50;
 
 export const createBlankUseCaseData = (index = 1): UseCaseData => ({
-  nombre: `Nuevo Caso de Uso ${index}`,
+  nombre: '',
   id: `UC 00${index}`,
   area: '',
   actores: '',
@@ -79,12 +79,12 @@ export function useTabsManager() {
         }
       }
 
-      // Migración transparente si existían datos anteriores
+      // Si no hay pestañas guardadas, abrir directamente con un caso de uso nuevo en blanco
       const legacyDataStr = localStorage.getItem(STORAGE_KEYS.LEGACY_FORM_DATA);
-      const initialData = legacyDataStr ? JSON.parse(legacyDataStr) : DEFAULT_USE_CASE_DATA;
+      const initialData = legacyDataStr ? JSON.parse(legacyDataStr) : createBlankUseCaseData(1);
       return [createTabObject(initialData, BASE_THEMES[0].id, true)];
     } catch {
-      return [createTabObject(DEFAULT_USE_CASE_DATA, BASE_THEMES[0].id, true)];
+      return [createTabObject(createBlankUseCaseData(1), BASE_THEMES[0].id, true)];
     }
   });
 

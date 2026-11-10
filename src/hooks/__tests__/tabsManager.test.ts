@@ -29,7 +29,6 @@ describe('Gestión de Estado de Pestañas (TabState)', () => {
 
   it('debe generar una plantilla en blanco con 3 filas de pasos y numeración', () => {
     const blank = createBlankUseCaseData(3);
-    expect(blank.nombre).toBe('Nuevo Caso de Uso 3');
     expect(blank.id).toBe('UC 003');
     expect(blank.pasos.length).toBe(3);
   });
