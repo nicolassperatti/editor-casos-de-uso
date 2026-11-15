@@ -66,10 +66,10 @@ export function MermaidModal({
     }
   }, [isOpen, diagramType, syncFromFormData]);
 
-  // Renderizar SVG a partir del código actual
+  // Renderizar SVG a partir del código actual (solo si el modal está abierto)
   const renderSvg = useCallback(
     async (codeToRender: string) => {
-      if (!codeToRender.trim()) return;
+      if (!isOpen || !codeToRender.trim()) return;
       try {
         setErrorMsg('');
         const { svg } = await renderMermaidSvg(codeToRender, activeTheme, isDarkMode);
@@ -80,14 +80,14 @@ export function MermaidModal({
         setErrorMsg(msg);
       }
     },
-    [activeTheme, isDarkMode]
+    [isOpen, activeTheme, isDarkMode]
   );
 
   useEffect(() => {
-    if (code) {
+    if (isOpen && code) {
       renderSvg(code);
     }
-  }, [code, renderSvg]);
+  }, [isOpen, code, renderSvg]);
 
   // Manejar edición de código con debounce
   const handleCodeChange = (newCode: string) => {

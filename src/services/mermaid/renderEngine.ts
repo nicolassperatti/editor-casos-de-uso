@@ -45,8 +45,29 @@ export async function renderMermaidSvg(
 ): Promise<{ svg: string; id: string }> {
   configureMermaidEngine(activeTheme, isDarkMode);
   const id = `mermaid_svg_${Date.now()}`;
-  const { svg } = await mermaid.render(id, code);
-  return { svg, id };
+
+  // Contenedor temporal aislado fuera de pantalla para evitar cualquier parpadeo de layout
+  const tempContainer = document.createElement('div');
+  tempContainer.id = `d${id}`;
+  tempContainer.style.position = 'fixed';
+  tempContainer.style.left = '-9999px';
+  tempContainer.style.top = '-9999px';
+  tempContainer.style.width = '1px';
+  tempContainer.style.height = '1px';
+  tempContainer.style.opacity = '0';
+  tempContainer.style.pointerEvents = 'none';
+  tempContainer.style.overflow = 'hidden';
+  tempContainer.style.zIndex = '-9999';
+  document.body.appendChild(tempContainer);
+
+  try {
+    const { svg } = await mermaid.render(id, code, tempContainer);
+    return { svg, id };
+  } finally {
+    if (tempContainer.parentNode) {
+      tempContainer.parentNode.removeChild(tempContainer);
+    }
+  }
 }
 
 export async function generateMermaidHighResCanvas(

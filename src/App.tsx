@@ -465,14 +465,16 @@ export default function App() {
         onClose={closeConfirmationDialog}
       />
 
-      <MermaidModal
-        isOpen={isMermaidModalOpen}
-        onClose={() => setIsMermaidModalOpen(false)}
-        data={currentData}
-        activeTheme={activeTheme}
-        isDarkMode={currentDarkMode}
-        onShowToast={showToast}
-      />
+      {isMermaidModalOpen && (
+        <MermaidModal
+          isOpen={isMermaidModalOpen}
+          onClose={() => setIsMermaidModalOpen(false)}
+          data={currentData}
+          activeTheme={activeTheme}
+          isDarkMode={currentDarkMode}
+          onShowToast={showToast}
+        />
+      )}
 
       {/* Contenedor de Toasts */}
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
