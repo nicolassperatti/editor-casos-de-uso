@@ -32,4 +32,21 @@ describe('Gestión de Estado de Pestañas (TabState)', () => {
     expect(blank.id).toBe('UC 003');
     expect(blank.pasos.length).toBe(3);
   });
+
+  it('debe reordenar elementos en un arreglo de pestañas sin alterar los datos internos', () => {
+    const tabA = createTabObject(createBlankUseCaseData(1), 'neon-pink', true);
+    const tabB = createTabObject(createBlankUseCaseData(2), 'electric-blue', true);
+    const tabC = createTabObject(createBlankUseCaseData(3), 'soft-amber', true);
+
+    const initialList = [tabA, tabB, tabC];
+    // Mover tabC (índice 2) al inicio (índice 0)
+    const reordered = [...initialList];
+    const [moved] = reordered.splice(2, 1);
+    reordered.splice(0, 0, moved);
+
+    expect(reordered[0].data.id).toBe('UC 003');
+    expect(reordered[1].data.id).toBe('UC 001');
+    expect(reordered[2].data.id).toBe('UC 002');
+    expect(reordered[0].tabId).toBe(tabC.tabId);
+  });
 });

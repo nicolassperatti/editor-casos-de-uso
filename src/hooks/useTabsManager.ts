@@ -342,6 +342,20 @@ export function useTabsManager() {
     setActiveTabId(tabId);
   }, []);
 
+  // Reordenar pestañas arrastrándolas con el mouse (Drag & Drop nativo)
+  const reorderTabs = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    setTabs(prev => {
+      if (fromIndex < 0 || fromIndex >= prev.length || toIndex < 0 || toIndex >= prev.length) {
+        return prev;
+      }
+      const updated = [...prev];
+      const [movedTab] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, movedTab);
+      return updated;
+    });
+  }, []);
+
   // Restaurar el ejemplo original (en pestaña actual o en una nueva)
   const resetToDefaultExample = useCallback(
     (inNewTab = false) => {
@@ -423,6 +437,7 @@ export function useTabsManager() {
     createNewTab,
     closeTab,
     switchTab,
+    reorderTabs,
     resetToDefaultExample,
     clearAllFields,
     importJsonData,

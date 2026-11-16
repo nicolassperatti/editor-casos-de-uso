@@ -40,6 +40,7 @@ export default function App() {
     createNewTab,
     closeTab,
     switchTab,
+    reorderTabs,
     resetToDefaultExample,
     clearAllFields,
     importJsonData,
@@ -425,6 +426,7 @@ export default function App() {
             onSwitchTab={switchTab}
             onCloseTab={handleCloseTabRequest}
             onCreateNewTab={() => setIsTemplatesModalOpen(true)}
+            onReorderTabs={reorderTabs}
           />
         </header>
       )}
