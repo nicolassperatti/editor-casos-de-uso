@@ -57,9 +57,12 @@ export function useTabsManager() {
   const [tabs, setTabs] = useState<TabState[]>(() => {
     try {
       const savedTabs = localStorage.getItem(STORAGE_KEYS.TABS);
-      if (savedTabs) {
+      if (savedTabs !== null) {
         const parsed: TabState[] = JSON.parse(savedTabs);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
+          if (parsed.length === 0) {
+            return [];
+          }
           return parsed.map(t => {
             const theme = t.theme || BASE_THEMES[0].id;
             const darkMode = typeof t.darkMode === 'boolean' ? t.darkMode : true;
@@ -79,7 +82,7 @@ export function useTabsManager() {
         }
       }
 
-      // Si no hay pestañas guardadas, abrir directamente con un caso de uso nuevo en blanco
+      // Si nunca hubo pestañas guardadas, abrir directamente con un caso de uso nuevo en blanco
       const legacyDataStr = localStorage.getItem(STORAGE_KEYS.LEGACY_FORM_DATA);
       const initialData = legacyDataStr ? JSON.parse(legacyDataStr) : createBlankUseCaseData(1);
       return [createTabObject(initialData, BASE_THEMES[0].id, true)];
@@ -101,7 +104,8 @@ export function useTabsManager() {
   const historyDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Pestaña activa
-  const activeTab = tabs.find(t => t.tabId === activeTabId) || tabs[0];
+  const activeTab = tabs.find(t => t.tabId === activeTabId) || (tabs.length > 0 ? tabs[0] : null);
+  const hasActiveTab = Boolean(activeTab);
   const currentData = activeTab?.data || DEFAULT_USE_CASE_DATA;
   const currentThemeId = activeTab?.theme || BASE_THEMES[0].id;
   const currentDarkMode = typeof activeTab?.darkMode === 'boolean' ? activeTab.darkMode : true;
@@ -320,17 +324,19 @@ export function useTabsManager() {
     [tabs.length, currentThemeId, currentDarkMode]
   );
 
-  // Cerrar pestaña por ID
+  // Cerrar pestaña por ID (permite cerrar la última pestaña para ir al Empty State)
   const closeTab = useCallback(
     (tabIdToClose: string) => {
       setTabs(prev => {
-        if (prev.length <= 1) return prev;
-
         const filtered = prev.filter(t => t.tabId !== tabIdToClose);
         if (activeTabId === tabIdToClose) {
-          const closedIndex = prev.findIndex(t => t.tabId === tabIdToClose);
-          const nextActive = filtered[Math.max(0, closedIndex - 1)] || filtered[0];
-          setActiveTabId(nextActive.tabId);
+          if (filtered.length === 0) {
+            setActiveTabId('');
+          } else {
+            const closedIndex = prev.findIndex(t => t.tabId === tabIdToClose);
+            const nextActive = filtered[Math.max(0, closedIndex - 1)] || filtered[0];
+            setActiveTabId(nextActive.tabId);
+          }
         }
         return filtered;
       });
@@ -423,6 +429,7 @@ export function useTabsManager() {
     tabs,
     activeTabId,
     activeTab,
+    hasActiveTab,
     currentData,
     currentThemeId,
     currentDarkMode,

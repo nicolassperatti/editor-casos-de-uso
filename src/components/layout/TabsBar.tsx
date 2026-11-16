@@ -58,6 +58,11 @@ export function TabsBar({
     <div className="bg-slate-100/90 dark:bg-slate-950/80 border-t border-slate-200/80 dark:border-slate-800/80">
       <div className="max-w-6xl mx-auto px-4 pt-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-1.5">
+          {tabs.length === 0 && (
+            <span className="text-xs text-slate-400 dark:text-slate-500 py-1 px-1 italic select-none">
+              Sin pestañas activas
+            </span>
+          )}
           {tabs.map((tab, idx) => {
             const isActive = tab.tabId === activeTabId;
             const isDragged = draggedIndex === idx;
@@ -95,21 +100,19 @@ export function TabsBar({
                   {tabTitle}
                 </span>
 
-                {tabs.length > 1 && (
-                  <button
-                    type="button"
-                    title="Cerrar pestaña"
-                    draggable={false}
-                    onDragStart={e => e.stopPropagation()}
-                    onClick={e => {
-                      e.stopPropagation();
-                      onCloseTab(tab.tabId);
-                    }}
-                    className="p-0.5 rounded hover:bg-slate-300 dark:hover:bg-slate-700 opacity-60 hover:opacity-100 transition cursor-pointer"
-                  >
-                    <X className="w-3 h-3 pointer-events-none" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  title="Cerrar pestaña"
+                  draggable={false}
+                  onDragStart={e => e.stopPropagation()}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onCloseTab(tab.tabId);
+                  }}
+                  className="p-0.5 rounded hover:bg-slate-300 dark:hover:bg-slate-700 opacity-60 hover:opacity-100 transition cursor-pointer"
+                >
+                  <X className="w-3 h-3 pointer-events-none" />
+                </button>
               </div>
             );
           })}

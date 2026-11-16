@@ -31,6 +31,7 @@ interface ActionBarProps {
   isExportingPdf: boolean;
   isCopyingPng: boolean;
   isDownloadingPng: boolean;
+  hasActiveTab?: boolean;
 }
 
 export function ActionBar({
@@ -49,6 +50,7 @@ export function ActionBar({
   isExportingPdf,
   isCopyingPng,
   isDownloadingPng,
+  hasActiveTab = true,
 }: ActionBarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -134,8 +136,13 @@ export function ActionBar({
           <button
             type="button"
             onClick={onOpenMermaidModal}
-            title="Abrir generador de diagramas Mermaid (Ctrl+Shift+D)"
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold accent-outline-btn flex items-center gap-1.5 transition shadow-2xs"
+            disabled={!hasActiveTab}
+            title={
+              hasActiveTab
+                ? 'Abrir generador de diagramas Mermaid (Ctrl+Shift+D)'
+                : 'Abre o crea un caso de uso para ver el diagrama Mermaid'
+            }
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold accent-outline-btn flex items-center gap-1.5 transition shadow-2xs disabled:opacity-40 disabled:pointer-events-none"
           >
             <GitBranch className="w-3.5 h-3.5 accent-text" />
             <span className="hidden sm:inline">Diagrama Mermaid</span>
@@ -146,9 +153,13 @@ export function ActionBar({
           <button
             type="button"
             onClick={onExportPDF}
-            disabled={isExportingPdf}
-            title="Exportar caso de uso a documento PDF estructurado"
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold accent-btn flex items-center gap-1.5 transition disabled:opacity-50 shadow-2xs"
+            disabled={!hasActiveTab || isExportingPdf}
+            title={
+              hasActiveTab
+                ? 'Exportar caso de uso a documento PDF estructurado'
+                : 'Abre o crea un caso de uso para exportar a PDF'
+            }
+            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold accent-btn flex items-center gap-1.5 transition disabled:opacity-40 disabled:pointer-events-none shadow-2xs"
           >
             {isExportingPdf ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -209,7 +220,8 @@ export function ActionBar({
                       setIsMenuOpen(false);
                       onExportJSON();
                     }}
-                    className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition"
+                    disabled={!hasActiveTab}
+                    className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition disabled:opacity-40 disabled:pointer-events-none"
                   >
                     <Download className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
                     <div className="flex flex-col">
@@ -244,8 +256,8 @@ export function ActionBar({
                       setIsMenuOpen(false);
                       onDownloadPNG();
                     }}
-                    disabled={isDownloadingPng}
-                    className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition disabled:opacity-50"
+                    disabled={!hasActiveTab || isDownloadingPng}
+                    className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {isDownloadingPng ? (
                       <Loader2 className="w-4 h-4 animate-spin text-slate-500 shrink-0" />
@@ -266,8 +278,8 @@ export function ActionBar({
                       setIsMenuOpen(false);
                       onCopyPNG();
                     }}
-                    disabled={isCopyingPng}
-                    className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition disabled:opacity-50"
+                    disabled={!hasActiveTab || isCopyingPng}
+                    className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {isCopyingPng ? (
                       <Loader2 className="w-4 h-4 animate-spin text-slate-500 shrink-0" />

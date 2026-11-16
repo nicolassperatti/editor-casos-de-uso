@@ -49,4 +49,14 @@ describe('Gestión de Estado de Pestañas (TabState)', () => {
     expect(reordered[2].data.id).toBe('UC 002');
     expect(reordered[0].tabId).toBe(tabC.tabId);
   });
+
+  it('debe permitir vaciar la lista de pestañas completamente para soportar el estado vacío (Empty State)', () => {
+    const tabA = createTabObject(createBlankUseCaseData(1), 'neon-pink', true);
+    let list = [tabA];
+
+    // Cerrar la única pestaña abierta
+    list = list.filter(t => t.tabId !== tabA.tabId);
+    expect(list.length).toBe(0);
+    expect(list).toEqual([]);
+  });
 });

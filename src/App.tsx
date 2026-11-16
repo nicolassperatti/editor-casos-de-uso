@@ -8,6 +8,7 @@ import { Header } from './components/layout/Header';
 import { ActionBar } from './components/layout/ActionBar';
 import { TabsBar } from './components/layout/TabsBar';
 import { UseCaseSheet } from './components/usecase/UseCaseSheet';
+import { EmptyStateView } from './components/usecase/EmptyStateView';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { CustomColorModal } from './components/modals/CustomColorModal';
 import { ConfirmationModal, type ConfirmModalButton } from './components/modals/ConfirmationModal';
@@ -30,6 +31,7 @@ export default function App() {
   const {
     tabs,
     activeTabId,
+    hasActiveTab,
     currentData,
     currentThemeId,
     currentDarkMode,
@@ -156,20 +158,15 @@ export default function App() {
     onOpenShortcuts: () => setIsShortcutsModalOpen(true),
   });
 
-  // 1. Confirmación de Cerrar Pestaña
+  // 1. Confirmación de Cerrar Pestaña (permite cerrar la última pestaña)
   const handleCloseTabRequest = (tabIdToClose: string) => {
-    if (tabs.length <= 1) {
-      showToast('Debe permanecer al menos una pestaña abierta', 'info');
-      return;
-    }
-
     const targetTab = tabs.find(t => t.tabId === tabIdToClose);
     const title = targetTab?.data.nombre?.trim() || targetTab?.data.id?.trim() || 'esta pestaña';
 
     setConfirmModal({
       isOpen: true,
       title: '¿Cerrar esta pestaña?',
-      message: `Se cerrará la pestaña "${title}" y se descartarán sus datos si no los has exportado como JSON.`,
+      message: `Se cerrará la pestaña "${title}" y se descartarán sus datos si no los has exportado.`,
       buttons: [
         {
           label: 'Cancelar',
@@ -189,8 +186,14 @@ export default function App() {
     });
   };
 
-  // 2. Confirmación de Restaurar Ejemplo (3 opciones)
+  // 2. Confirmación de Restaurar Ejemplo (3 opciones, o directo si no hay pestañas)
   const handleResetToDefault = () => {
+    if (!hasActiveTab) {
+      resetToDefaultExample(true);
+      showToast('Ejemplo guiado abierto en nueva pestaña', 'success');
+      return;
+    }
+
     promptThreeOptionConfirm(
       '¿Restaurar el ejemplo original?',
       'Esto cargará los datos del ejemplo original ("Estudiante UC 005") y restablecerá el color al tema original (Rosa Neón). ¿Deseas reemplazar la pestaña actual o abrirlo en una pestaña nueva?',
@@ -206,8 +209,14 @@ export default function App() {
     );
   };
 
-  // 3. Confirmación de Nuevo en Blanco (3 opciones)
+  // 3. Confirmación de Nuevo en Blanco (3 opciones, o directo si no hay pestañas)
   const handleClearAll = () => {
+    if (!hasActiveTab) {
+      clearAllFields(true);
+      showToast('Nueva especificación en blanco creada', 'success');
+      return;
+    }
+
     promptThreeOptionConfirm(
       '¿Limpiar formulario actual o crear pestaña?',
       'Si limpias la pestaña actual se borrará su contenido (aunque podrás recuperarlo con Deshacer). También puedes abrir directamente una nueva pestaña en blanco.',
@@ -224,7 +233,7 @@ export default function App() {
     );
   };
 
-  // 4. Confirmación de Importar JSON o PNG editable (3 opciones)
+  // 4. Confirmación de Importar JSON o PNG editable (3 opciones, o directo si no hay pestañas)
   const handleImportFile = async (file: File) => {
     const isPngFile = file.name.toLowerCase().endsWith('.png') || file.type === 'image/png';
 
@@ -256,6 +265,18 @@ export default function App() {
         showToast('El archivo JSON no tiene un formato válido', 'error');
         return;
       }
+    }
+
+    // Si no hay pestañas abiertas, importar directamente en una nueva pestaña
+    if (!hasActiveTab) {
+      importJsonData(result.data, result.theme, result.darkMode, true);
+      showToast(
+        isPngFile
+          ? 'Caso de uso importado desde imagen PNG en una nueva pestaña'
+          : 'JSON importado en una nueva pestaña',
+        'success'
+      );
+      return;
     }
 
     const docLabel = result.data.nombre?.trim() || result.data.id?.trim() || file.name;
@@ -429,6 +450,7 @@ export default function App() {
             isExportingPdf={isExportingPdf}
             isCopyingPng={isCopyingPng}
             isDownloadingPng={isDownloadingPng}
+            hasActiveTab={hasActiveTab}
           />
 
           <TabsBar
@@ -442,13 +464,22 @@ export default function App() {
         </header>
       )}
 
-      {/* Hoja Principal de Especificación de Caso de Uso */}
-      <UseCaseSheet
-        ref={sheetRef}
-        data={currentData}
-        saveIndicator={saveIndicator}
-        onUpdate={updateCurrentData}
-      />
+      {/* Vista Principal: Ficha de Caso de Uso o Pantalla de Bienvenida (Empty State) */}
+      {hasActiveTab ? (
+        <UseCaseSheet
+          ref={sheetRef}
+          data={currentData}
+          saveIndicator={saveIndicator}
+          onUpdate={updateCurrentData}
+        />
+      ) : (
+        <EmptyStateView
+          onCreateBlank={() => clearAllFields(true)}
+          onOpenTemplates={() => setIsTemplatesModalOpen(true)}
+          onImportFile={handleImportFile}
+          onRestoreDefault={() => resetToDefaultExample(true)}
+        />
+      )}
 
       {/* Modales */}
       <TemplatesModal
