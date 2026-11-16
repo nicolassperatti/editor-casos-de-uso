@@ -194,8 +194,13 @@ export function ActionBar({
                     }}
                     className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition"
                   >
-                    <Upload className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                    <span>Importar archivo JSON...</span>
+                    <Upload className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                    <div className="flex flex-col">
+                      <span>Importar archivo...</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                        JSON o PNG editable
+                      </span>
+                    </div>
                   </button>
 
                   <button
@@ -206,8 +211,13 @@ export function ActionBar({
                     }}
                     className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition"
                   >
-                    <Download className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                    <span>Exportar archivo JSON</span>
+                    <Download className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                    <div className="flex flex-col">
+                      <span>Exportar archivo JSON</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                        Estructura completa de datos
+                      </span>
+                    </div>
                   </button>
 
                   <button
@@ -238,11 +248,16 @@ export function ActionBar({
                     className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition disabled:opacity-50"
                   >
                     {isDownloadingPng ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-500 shrink-0" />
                     ) : (
-                      <ImageIcon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                      <ImageIcon className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
                     )}
-                    <span>{isDownloadingPng ? 'Generando PNG...' : 'Descargar imagen PNG'}</span>
+                    <div className="flex flex-col">
+                      <span>{isDownloadingPng ? 'Generando PNG...' : 'Descargar imagen PNG'}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                        Con datos editables incrustados
+                      </span>
+                    </div>
                   </button>
 
                   <button
@@ -255,21 +270,26 @@ export function ActionBar({
                     className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 transition disabled:opacity-50"
                   >
                     {isCopyingPng ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-500 shrink-0" />
                     ) : (
-                      <Copy className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                      <Copy className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
                     )}
-                    <span>{isCopyingPng ? 'Copiando...' : 'Copiar PNG al portapapeles'}</span>
+                    <div className="flex flex-col">
+                      <span>{isCopyingPng ? 'Copiando...' : 'Copiar PNG al portapapeles'}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                        Imagen en alta resolución
+                      </span>
+                    </div>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Input oculto para importación de archivos JSON */}
+            {/* Input oculto para importación de archivos JSON o PNG editables */}
             <input
               ref={fileInputRef}
               type="file"
-              accept=".json"
+              accept=".json,.png,image/png"
               className="hidden"
               onChange={handleFileChange}
             />

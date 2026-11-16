@@ -13,13 +13,14 @@ import { MermaidModal } from './components/modals/mermaid/MermaidModal';
 import { TemplatesModal } from './components/modals/TemplatesModal';
 import { ShortcutsModal } from './components/modals/ShortcutsModal';
 import type { UseCaseTemplate } from './constants/templates';
-import { Minimize2 } from 'lucide-react';
+import { Minimize2, Upload } from 'lucide-react';
 import {
   exportUseCaseToJson,
   validateAndSanitizeImportedJson,
   downloadUseCaseAsPNG,
   copyUseCaseAsPNG,
   exportUseCaseToPDF,
+  extractUseCaseFromPngFile,
 } from './services/export';
 
 export default function App() {
@@ -253,8 +254,57 @@ export default function App() {
     });
   };
 
-  // 4. Confirmación de Importar JSON (3 opciones)
-  const handleImportJSON = (file: File) => {
+  // 4. Confirmación de Importar JSON o PNG editable (3 opciones)
+  const handleImportFile = async (file: File) => {
+    const isPngFile = file.name.toLowerCase().endsWith('.png') || file.type === 'image/png';
+
+    if (isPngFile) {
+      try {
+        const result = await extractUseCaseFromPngFile(file);
+        if (!result) {
+          showToast('Esta imagen PNG no contiene datos de caso de uso editables', 'error');
+          return;
+        }
+
+        const docLabel = result.data.nombre?.trim() || result.data.id?.trim() || file.name;
+
+        setConfirmModal({
+          isOpen: true,
+          title: '¿Cómo deseas importar este caso de uso desde la imagen PNG?',
+          message: `Se detectaron datos editables de "${docLabel}" incrustados en la imagen "${file.name}". Si reemplazas la pestaña actual se sobrescribirá lo que tienes en pantalla (puedes usar Deshacer), o puedes abrirlo en una nueva pestaña.`,
+          buttons: [
+            {
+              label: 'Cancelar',
+              style: 'cancel',
+              onClick: closeConfirmationDialog,
+            },
+            {
+              label: 'Abrir en Nueva Pestaña',
+              style: 'accent-outline',
+              onClick: () => {
+                closeConfirmationDialog();
+                importJsonData(result.data, result.theme, result.darkMode, true);
+                showToast('Caso de uso importado desde imagen PNG en una nueva pestaña', 'success');
+              },
+            },
+            {
+              label: 'Reemplazar Pestaña Actual',
+              style: 'accent',
+              onClick: () => {
+                closeConfirmationDialog();
+                importJsonData(result.data, result.theme, result.darkMode, false);
+                showToast('Caso de uso restaurado desde imagen PNG', 'success');
+              },
+            },
+          ],
+        });
+      } catch (err) {
+        console.error(err);
+        showToast('Error al leer los datos de la imagen PNG', 'error');
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = e => {
       try {
@@ -329,11 +379,11 @@ export default function App() {
     if (!sheetRef.current) return;
     try {
       setIsCopyingPng(true);
-      await copyUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode);
+      await copyUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode, currentThemeId);
       showToast('Imagen copiada al portapapeles', 'success');
     } catch {
       try {
-        await downloadUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode);
+        await downloadUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode, currentThemeId);
         showToast('Se descargó el PNG automáticamente (portapapeles restringido)', 'info');
       } catch (err) {
         console.error(err);
@@ -348,8 +398,8 @@ export default function App() {
     if (!sheetRef.current) return;
     try {
       setIsDownloadingPng(true);
-      await downloadUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode);
-      showToast('Imagen PNG descargada con éxito', 'success');
+      await downloadUseCaseAsPNG(sheetRef.current, currentData, currentDarkMode, currentThemeId);
+      showToast('Imagen PNG editable descargada con éxito', 'success');
     } catch (err) {
       console.error(err);
       showToast('Error al generar la imagen PNG', 'error');
@@ -372,8 +422,73 @@ export default function App() {
     }
   };
 
+  // Drag and Drop global para archivos JSON y PNG editables
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const dragCounter = useRef(0);
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      dragCounter.current++;
+      setIsDraggingFile(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      dragCounter.current--;
+      if (dragCounter.current <= 0) {
+        dragCounter.current = 0;
+        setIsDraggingFile(false);
+      }
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      dragCounter.current = 0;
+      setIsDraggingFile(false);
+      const file = e.dataTransfer.files?.[0];
+      if (file) {
+        handleImportFile(file);
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 relative">
+    <div
+      className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Overlay visual al arrastrar archivo (JSON o PNG editable) */}
+      {isDraggingFile && (
+        <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 border-2 border-dashed border-emerald-500 dark:border-emerald-400 rounded-2xl p-8 max-w-md mx-4 shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-150">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4">
+              <Upload className="w-8 h-8 animate-bounce" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1">
+              Suelta tu caso de uso aquí
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Soporta archivos <strong>.json</strong> o imágenes <strong>.png</strong> editables (estilo Excalidraw)
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Botón flotante para salir de Modo Zen */}
       {isZenMode && (
         <div className="fixed top-4 right-4 z-40 animate-in fade-in duration-200">
@@ -408,7 +523,7 @@ export default function App() {
             onUndo={undo}
             onRedo={redo}
             onExportJSON={handleExportJSON}
-            onImportJSON={handleImportJSON}
+            onImportJSON={handleImportFile}
             onResetToDefault={handleResetToDefault}
             onClearAll={handleClearAll}
             onOpenMermaidModal={() => setIsMermaidModalOpen(true)}
