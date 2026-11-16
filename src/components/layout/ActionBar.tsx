@@ -151,9 +151,9 @@ export function ActionBar({
             className="px-3.5 py-1.5 rounded-lg text-xs font-semibold accent-btn flex items-center gap-1.5 transition disabled:opacity-50 shadow-2xs"
           >
             {isExportingPdf ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <FileText className="w-3.5 h-3.5 text-white" />
+              <FileText className="w-3.5 h-3.5" />
             )}
             <span>{isExportingPdf ? 'Exportando PDF...' : 'Exportar PDF'}</span>
           </button>

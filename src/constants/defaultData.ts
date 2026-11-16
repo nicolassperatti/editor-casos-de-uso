@@ -13,6 +13,41 @@ export const createAltFlow = (pasoRef = '', condicion = '', accion = '', id?: st
   accion,
 });
 
+/**
+ * Calcula la siguiente referencia correlativa para un flujo alternativo (ej. 1.a -> 1.b -> 1.c).
+ */
+export function getNextAltFlowRef(existingFlows: AltFlow[], defaultStep = 1): string {
+  if (!existingFlows || existingFlows.length === 0) {
+    return `${defaultStep}.a`;
+  }
+
+  // Tomar como referencia el paso del último flujo alternativo creado
+  const lastFlow = existingFlows[existingFlows.length - 1];
+  const match = (lastFlow.pasoRef || '').trim().match(/^(\d+)(?:\.([a-z]))?$/i);
+  const stepNum = match ? parseInt(match[1], 10) : defaultStep;
+
+  // Letras ya utilizadas para este número de paso
+  const usedLetters = new Set<string>();
+  existingFlows.forEach(f => {
+    const m = (f.pasoRef || '').trim().match(new RegExp(`^${stepNum}\\.([a-z])$`, 'i'));
+    if (m) {
+      usedLetters.add(m[1].toLowerCase());
+    }
+  });
+
+  // Encontrar la siguiente letra disponible en el abecedario (a, b, c, ... z)
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+  let nextLetter = 'a';
+  for (let i = 0; i < alphabet.length; i++) {
+    if (!usedLetters.has(alphabet[i])) {
+      nextLetter = alphabet[i];
+      break;
+    }
+  }
+
+  return `${stepNum}.${nextLetter}`;
+}
+
 export const DEFAULT_USE_CASE_DATA: UseCaseData = {
   nombre: "Cambiar información de estudiante",
   id: "Estudiante UC 005",

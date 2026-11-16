@@ -103,7 +103,7 @@ body {
 /* Botones e indicadores con el color de acento dinámico */
 .accent-btn {
   background-color: var(--accent-color);
-  color: #ffffff;
+  color: var(--accent-contrast, #ffffff);
   box-shadow: 0 4px 14px 0 rgba(var(--accent-rgb), 0.35);
 }
 

@@ -5,7 +5,7 @@ import { QuickChips } from '../ui/QuickChips';
 import { StepsTable } from './StepsTable';
 import { AltFlowsTable } from './AltFlowsTable';
 import { ComplexityBadge } from './ComplexityBadge';
-import { createStep, createAltFlow } from '../../constants/defaultData';
+import { createStep, createAltFlow, getNextAltFlowRef } from '../../constants/defaultData';
 
 interface UseCaseSheetProps {
   data: UseCaseData;
@@ -84,7 +84,7 @@ export const UseCaseSheet = forwardRef<HTMLDivElement, UseCaseSheetProps>(
         ...prev,
         flujosAlternativos: [
           ...prev.flujosAlternativos,
-          createAltFlow(`${prev.pasos.length || 1}.a`),
+          createAltFlow(getNextAltFlowRef(prev.flujosAlternativos, 1)),
         ],
       }), true);
     };

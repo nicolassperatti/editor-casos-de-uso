@@ -1,9 +1,10 @@
 import mermaid from 'mermaid';
 import html2canvas from 'html2canvas';
 import type { Theme } from '../../types/useCase';
+import { getAdaptiveThemeColor } from '../../constants/themes';
 
 export function configureMermaidEngine(activeTheme: Theme, isDarkMode: boolean): void {
-  const accentHex = isDarkMode ? activeTheme.hexDark : activeTheme.hexLight;
+  const accentHex = getAdaptiveThemeColor(activeTheme, isDarkMode);
 
   mermaid.initialize({
     startOnLoad: false,

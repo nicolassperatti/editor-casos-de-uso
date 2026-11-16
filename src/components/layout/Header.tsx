@@ -27,7 +27,7 @@ export function Header({
       {/* Marca y Título */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center accent-btn font-bold text-lg shadow-md">
-          <FileSpreadsheet className="w-5 h-5 text-white" />
+          <FileSpreadsheet className="w-5 h-5 text-current" />
         </div>
         <div>
           <h1 className="font-bold text-base sm:text-lg tracking-tight">
