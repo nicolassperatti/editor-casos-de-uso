@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import type { UseCaseData } from '../../types/useCase';
-import { prepareCleanCloneForExport, getSanitizedFilename } from './prepareClone';
+import { createOffscreenExportStage, getSanitizedFilename } from './prepareClone';
 
 interface PageSlice {
   startCss: number;
@@ -18,21 +18,7 @@ export async function exportUseCaseToPDF(
   isDarkMode: boolean
 ): Promise<void> {
   const bgColor = isDarkMode ? '#0f172a' : '#ffffff';
-
-  // Crear contenedor off-screen para medir cada fila antes de capturar
-  const stage = document.createElement('div');
-  stage.className = 'export-mode';
-  stage.style.position = 'fixed';
-  stage.style.left = '-9999px';
-  stage.style.top = '0';
-  stage.style.width = '980px';
-  stage.style.padding = '20px';
-  stage.style.backgroundColor = bgColor;
-  stage.style.zIndex = '-1';
-
-  const clone = prepareCleanCloneForExport(sourceSheet, data);
-  stage.appendChild(clone);
-  document.body.appendChild(stage);
+  const { stage, clone, cleanup } = createOffscreenExportStage(sourceSheet, data, isDarkMode, '20px');
 
   try {
     const pdf = new jsPDF({
@@ -162,8 +148,6 @@ export async function exportUseCaseToPDF(
 
     pdf.save(getSanitizedFilename(data, 'pdf'));
   } finally {
-    if (stage.parentNode) {
-      document.body.removeChild(stage);
-    }
+    cleanup();
   }
 }

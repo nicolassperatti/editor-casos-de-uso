@@ -58,3 +58,44 @@ export function prepareCleanCloneForExport(
 
   return clone;
 }
+
+export interface OffscreenExportStage {
+  stage: HTMLDivElement;
+  clone: HTMLElement;
+  cleanup: () => void;
+}
+
+/**
+ * Crea un contenedor aislado fuera de pantalla con el clon preparado
+ * para capturas de alta resolución (PNG o PDF).
+ */
+export function createOffscreenExportStage(
+  sourceSheet: HTMLElement,
+  data: UseCaseData,
+  isDarkMode: boolean,
+  padding = '24px'
+): OffscreenExportStage {
+  const bgColor = isDarkMode ? '#0f172a' : '#ffffff';
+
+  const stage = document.createElement('div');
+  stage.className = 'export-mode';
+  stage.style.position = 'fixed';
+  stage.style.left = '-9999px';
+  stage.style.top = '0';
+  stage.style.width = '980px';
+  stage.style.padding = padding;
+  stage.style.backgroundColor = bgColor;
+  stage.style.zIndex = '-1';
+
+  const clone = prepareCleanCloneForExport(sourceSheet, data);
+  stage.appendChild(clone);
+  document.body.appendChild(stage);
+
+  const cleanup = () => {
+    if (stage.parentNode) {
+      document.body.removeChild(stage);
+    }
+  };
+
+  return { stage, clone, cleanup };
+}

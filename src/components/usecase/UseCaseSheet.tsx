@@ -13,6 +13,60 @@ interface UseCaseSheetProps {
   onUpdate: (updater: (prev: UseCaseData) => UseCaseData, immediateHistory?: boolean) => void;
 }
 
+interface SheetTextRowProps {
+  id: string;
+  label: string;
+  value: string;
+  placeholder?: string;
+  rows?: number;
+  onChange: (value: string) => void;
+}
+
+function SheetTextRow({ id, label, value, placeholder, rows, onChange }: SheetTextRowProps) {
+  return (
+    <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+      <label htmlFor={id} className="font-bold shrink-0 sm:w-48 select-none">
+        {label}:
+      </label>
+      <AutoResizeTextarea
+        id={id}
+        rows={rows}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
+interface SheetSelectRowProps {
+  id: string;
+  label: string;
+  value: string;
+  options: string[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+function SheetSelectRow({ id, label, value, options, placeholder, onChange }: SheetSelectRowProps) {
+  return (
+    <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 flex-1">
+        <label htmlFor={id} className="font-bold shrink-0 sm:w-48 select-none">
+          {label}:
+        </label>
+        <AutoResizeTextarea
+          id={id}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+        />
+      </div>
+      <QuickChips options={options} currentValue={value} onSelect={onChange} />
+    </div>
+  );
+}
+
 export const UseCaseSheet = forwardRef<HTMLDivElement, UseCaseSheetProps>(
   ({ data, saveIndicator, onUpdate }, ref) => {
     const handleFieldChange = (field: keyof UseCaseData, value: string) => {
@@ -166,17 +220,13 @@ export const UseCaseSheet = forwardRef<HTMLDivElement, UseCaseSheetProps>(
           </div>
 
           {/* FILA 2: Área */}
-          <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
-            <label htmlFor="field-area" className="font-bold shrink-0 sm:w-48 select-none">
-              Área:
-            </label>
-            <AutoResizeTextarea
-              id="field-area"
-              value={data.area}
-              onChange={v => handleFieldChange('area', v)}
-              placeholder="Ej. Sistema de estudiantes, Ventas, Pagos, Logística..."
-            />
-          </div>
+          <SheetTextRow
+            id="field-area"
+            label="Área"
+            value={data.area}
+            onChange={v => handleFieldChange('area', v)}
+            placeholder="Ej. Sistema de estudiantes, Ventas, Pagos, Logística..."
+          />
 
           {/* FILA 3: Actor(es) Primario y Secundarios */}
           <div className="uc-row grid grid-cols-1 md:grid-cols-12">
@@ -214,32 +264,24 @@ export const UseCaseSheet = forwardRef<HTMLDivElement, UseCaseSheetProps>(
           </div>
 
           {/* FILA 4: Descripción */}
-          <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
-            <label htmlFor="field-descripcion" className="font-bold shrink-0 sm:w-48 select-none">
-              Descripción:
-            </label>
-            <AutoResizeTextarea
-              id="field-descripcion"
-              rows={2}
-              value={data.descripcion}
-              onChange={v => handleFieldChange('descripcion', v)}
-              placeholder="Describa detalladamente el propósito del caso de uso..."
-            />
-          </div>
+          <SheetTextRow
+            id="field-descripcion"
+            label="Descripción"
+            rows={2}
+            value={data.descripcion}
+            onChange={v => handleFieldChange('descripcion', v)}
+            placeholder="Describa detalladamente el propósito del caso de uso..."
+          />
 
           {/* FILA 5: Evento desencadenador */}
-          <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
-            <label htmlFor="field-evento" className="font-bold shrink-0 sm:w-48 select-none">
-              Evento desencadenador:
-            </label>
-            <AutoResizeTextarea
-              id="field-evento"
-              rows={2}
-              value={data.evento}
-              onChange={v => handleFieldChange('evento', v)}
-              placeholder="Describa el evento que inicia el caso de uso..."
-            />
-          </div>
+          <SheetTextRow
+            id="field-evento"
+            label="Evento desencadenador"
+            rows={2}
+            value={data.evento}
+            onChange={v => handleFieldChange('evento', v)}
+            placeholder="Describa el evento que inicia el caso de uso..."
+          />
 
           {/* FILA 6: Tipo de desencadenador (Externo / Temporal) */}
           <div className="uc-row p-2.5 sm:p-3 flex flex-wrap items-center gap-4 sm:gap-8">
@@ -300,110 +342,64 @@ export const UseCaseSheet = forwardRef<HTMLDivElement, UseCaseSheetProps>(
           />
 
           {/* FILAS INFERIORES DE ESPECIFICACIÓN */}
-          {/* Pre-condiciones */}
-          <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
-            <label htmlFor="field-precondiciones" className="font-bold shrink-0 sm:w-48 select-none">
-              Pre-condiciones:
-            </label>
-            <AutoResizeTextarea
-              id="field-precondiciones"
-              value={data.precondiciones}
-              onChange={v => handleFieldChange('precondiciones', v)}
-              placeholder="Estado necesario antes de que inicie el caso de uso..."
-            />
-          </div>
+          <SheetTextRow
+            id="field-precondiciones"
+            label="Pre-condiciones"
+            value={data.precondiciones}
+            onChange={v => handleFieldChange('precondiciones', v)}
+            placeholder="Estado necesario antes de que inicie el caso de uso..."
+          />
 
-          {/* Post-condiciones */}
-          <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
-            <label htmlFor="field-postcondiciones" className="font-bold shrink-0 sm:w-48 select-none">
-              Post-condiciones:
-            </label>
-            <AutoResizeTextarea
-              id="field-postcondiciones"
-              value={data.postcondiciones}
-              onChange={v => handleFieldChange('postcondiciones', v)}
-              placeholder="Resultado tras completar exitosamente el caso de uso..."
-            />
-          </div>
+          <SheetTextRow
+            id="field-postcondiciones"
+            label="Post-condiciones"
+            value={data.postcondiciones}
+            onChange={v => handleFieldChange('postcondiciones', v)}
+            placeholder="Resultado tras completar exitosamente el caso de uso..."
+          />
 
-          {/* Suposiciones */}
-          <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
-            <label htmlFor="field-suposiciones" className="font-bold shrink-0 sm:w-48 select-none">
-              Suposiciones:
-            </label>
-            <AutoResizeTextarea
-              id="field-suposiciones"
-              value={data.suposiciones}
-              onChange={v => handleFieldChange('suposiciones', v)}
-              placeholder="Condiciones asumidas como verdaderas..."
-            />
-          </div>
+          <SheetTextRow
+            id="field-suposiciones"
+            label="Suposiciones"
+            value={data.suposiciones}
+            onChange={v => handleFieldChange('suposiciones', v)}
+            placeholder="Condiciones asumidas como verdaderas..."
+          />
 
-          {/* Requerimientos cumplidos */}
-          <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
-            <label htmlFor="field-requerimientos" className="font-bold shrink-0 sm:w-48 select-none">
-              Requerimientos cumplidos:
-            </label>
-            <AutoResizeTextarea
-              id="field-requerimientos"
-              value={data.requerimientos}
-              onChange={v => handleFieldChange('requerimientos', v)}
-              placeholder="Requerimientos funcionales o de negocio vinculados..."
-            />
-          </div>
+          <SheetTextRow
+            id="field-requerimientos"
+            label="Requerimientos cumplidos"
+            value={data.requerimientos}
+            onChange={v => handleFieldChange('requerimientos', v)}
+            placeholder="Requerimientos funcionales o de negocio vinculados..."
+          />
 
-          {/* Cuestiones pendientes */}
-          <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
-            <label htmlFor="field-cuestiones" className="font-bold shrink-0 sm:w-48 select-none">
-              Cuestiones pendientes:
-            </label>
-            <AutoResizeTextarea
-              id="field-cuestiones"
-              value={data.cuestiones}
-              onChange={v => handleFieldChange('cuestiones', v)}
-              placeholder="Preguntas o definiciones por resolver..."
-            />
-          </div>
+          <SheetTextRow
+            id="field-cuestiones"
+            label="Cuestiones pendientes"
+            value={data.cuestiones}
+            onChange={v => handleFieldChange('cuestiones', v)}
+            placeholder="Preguntas o definiciones por resolver..."
+          />
 
-          {/* Prioridad */}
-          <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 flex-1">
-              <label htmlFor="field-prioridad" className="font-bold shrink-0 sm:w-48 select-none">
-                Prioridad:
-              </label>
-              <AutoResizeTextarea
-                id="field-prioridad"
-                value={data.prioridad}
-                onChange={v => handleFieldChange('prioridad', v)}
-                placeholder="Ej. Media, Alta, Baja"
-              />
-            </div>
-            <QuickChips
-              options={['Baja', 'Media', 'Alta']}
-              currentValue={data.prioridad}
-              onSelect={v => handleFieldChange('prioridad', v)}
-            />
-          </div>
+          {/* Prioridad y Riesgo */}
+          <SheetSelectRow
+            id="field-prioridad"
+            label="Prioridad"
+            value={data.prioridad}
+            options={['Baja', 'Media', 'Alta']}
+            onChange={v => handleFieldChange('prioridad', v)}
+            placeholder="Ej. Media, Alta, Baja"
+          />
 
-          {/* Riesgo */}
-          <div className="uc-row p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 flex-1">
-              <label htmlFor="field-riesgo" className="font-bold shrink-0 sm:w-48 select-none">
-                Riesgo:
-              </label>
-              <AutoResizeTextarea
-                id="field-riesgo"
-                value={data.riesgo}
-                onChange={v => handleFieldChange('riesgo', v)}
-                placeholder="Ej. Medio, Alto, Bajo"
-              />
-            </div>
-            <QuickChips
-              options={['Bajo', 'Medio', 'Alto']}
-              currentValue={data.riesgo}
-              onSelect={v => handleFieldChange('riesgo', v)}
-            />
-          </div>
+          <SheetSelectRow
+            id="field-riesgo"
+            label="Riesgo"
+            value={data.riesgo}
+            options={['Bajo', 'Medio', 'Alto']}
+            onChange={v => handleFieldChange('riesgo', v)}
+            placeholder="Ej. Medio, Alto, Bajo"
+          />
         </div>
       </main>
     );

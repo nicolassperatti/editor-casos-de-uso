@@ -1,6 +1,6 @@
 import html2canvas from 'html2canvas';
 import type { UseCaseData } from '../../types/useCase';
-import { prepareCleanCloneForExport, getSanitizedFilename } from './prepareClone';
+import { createOffscreenExportStage, getSanitizedFilename } from './prepareClone';
 import { embedUseCaseInPngBlob } from './pngMetadata';
 
 /**
@@ -12,20 +12,7 @@ export async function generateCleanCanvas(
   isDarkMode: boolean
 ): Promise<HTMLCanvasElement> {
   const bgColor = isDarkMode ? '#0f172a' : '#ffffff';
-
-  const stage = document.createElement('div');
-  stage.className = 'export-mode';
-  stage.style.position = 'fixed';
-  stage.style.left = '-9999px';
-  stage.style.top = '0';
-  stage.style.width = '980px';
-  stage.style.padding = '24px';
-  stage.style.backgroundColor = bgColor;
-  stage.style.zIndex = '-1';
-
-  const clone = prepareCleanCloneForExport(sourceSheet, data);
-  stage.appendChild(clone);
-  document.body.appendChild(stage);
+  const { stage, cleanup } = createOffscreenExportStage(sourceSheet, data, isDarkMode, '24px');
 
   try {
     const canvas = await html2canvas(stage, {
@@ -36,9 +23,7 @@ export async function generateCleanCanvas(
     });
     return canvas;
   } finally {
-    if (stage.parentNode) {
-      document.body.removeChild(stage);
-    }
+    cleanup();
   }
 }
 

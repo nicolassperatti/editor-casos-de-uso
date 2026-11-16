@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useTabsManager } from './hooks/useTabsManager';
 import { useToast } from './hooks/useToast';
+import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
+import { useFileDrop } from './hooks/useFileDrop';
 import { Header } from './components/layout/Header';
 import { ActionBar } from './components/layout/ActionBar';
 import { TabsBar } from './components/layout/TabsBar';
@@ -21,6 +23,7 @@ import {
   copyUseCaseAsPNG,
   exportUseCaseToPDF,
   extractUseCaseFromPngFile,
+  type ImportedUseCaseResult,
 } from './services/export';
 
 export default function App() {
@@ -80,67 +83,60 @@ export default function App() {
     buttons: [],
   });
 
-  const closeConfirmationDialog = () => {
+  const closeConfirmationDialog = useCallback(() => {
     setConfirmModal(prev => ({ ...prev, isOpen: false }));
-  };
+  }, []);
 
-  // Listener global para atajos de teclado extendidos
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
-      const key = e.key.toLowerCase();
-      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-      const isEditingText = targetTag === 'input' || targetTag === 'textarea';
+  // Función auxiliar para diálogos estándar de 3 opciones (Cancelar / Nueva Pestaña / Acción Pestaña Actual)
+  const promptThreeOptionConfirm = useCallback(
+    (
+      title: string,
+      message: string,
+      onNewTab: () => void,
+      onCurrentTab: () => void,
+      currentTabLabel: string,
+      currentTabStyle: 'accent' | 'danger' = 'accent'
+    ) => {
+      setConfirmModal({
+        isOpen: true,
+        title,
+        message,
+        buttons: [
+          {
+            label: 'Cancelar',
+            style: 'cancel',
+            onClick: closeConfirmationDialog,
+          },
+          {
+            label: 'Abrir en Nueva Pestaña',
+            style: 'accent-outline',
+            onClick: () => {
+              closeConfirmationDialog();
+              onNewTab();
+            },
+          },
+          {
+            label: currentTabLabel,
+            style: currentTabStyle,
+            onClick: () => {
+              closeConfirmationDialog();
+              onCurrentTab();
+            },
+          },
+        ],
+      });
+    },
+    [closeConfirmationDialog]
+  );
 
-      // 1. Escape: cerrar cualquier modal o salir de Zen Mode
-      if (e.key === 'Escape') {
-        if (isCustomColorModalOpen) setIsCustomColorModalOpen(false);
-        else if (isMermaidModalOpen) setIsMermaidModalOpen(false);
-        else if (isTemplatesModalOpen) setIsTemplatesModalOpen(false);
-        else if (isShortcutsModalOpen) setIsShortcutsModalOpen(false);
-        else if (confirmModal.isOpen) closeConfirmationDialog();
-        else if (isZenMode) setIsZenMode(false);
-        return;
-      }
-
-      // 2. F2: Alternar Modo Zen
-      if (e.key === 'F2') {
-        e.preventDefault();
-        setIsZenMode(prev => !prev);
-        return;
-      }
-
-      // 3. Ctrl + S: Guardar con feedback visual
-      if (isCtrlOrMeta && key === 's') {
-        e.preventDefault();
-        showToast('✓ Guardado automático activo en el navegador', 'success');
-        return;
-      }
-
-      // 4. Ctrl + Alt + N: Abrir catálogo de plantillas
-      if (isCtrlOrMeta && e.altKey && key === 'n') {
-        e.preventDefault();
-        setIsTemplatesModalOpen(true);
-        return;
-      }
-
-      // 5. Ctrl + Shift + D: Abrir Diagrama Mermaid
-      if (isCtrlOrMeta && e.shiftKey && key === 'd') {
-        e.preventDefault();
-        setIsMermaidModalOpen(true);
-        return;
-      }
-
-      // 6. F1 o '?' fuera de inputs: Abrir ayuda de atajos
-      if (e.key === 'F1' || (e.key === '?' && !isEditingText)) {
-        e.preventDefault();
-        setIsShortcutsModalOpen(true);
-        return;
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  // Atajos de teclado globales
+  const handleEscape = useCallback(() => {
+    if (isCustomColorModalOpen) setIsCustomColorModalOpen(false);
+    else if (isMermaidModalOpen) setIsMermaidModalOpen(false);
+    else if (isTemplatesModalOpen) setIsTemplatesModalOpen(false);
+    else if (isShortcutsModalOpen) setIsShortcutsModalOpen(false);
+    else if (confirmModal.isOpen) closeConfirmationDialog();
+    else if (isZenMode) setIsZenMode(false);
   }, [
     isCustomColorModalOpen,
     isMermaidModalOpen,
@@ -148,8 +144,17 @@ export default function App() {
     isShortcutsModalOpen,
     confirmModal.isOpen,
     isZenMode,
-    showToast,
+    closeConfirmationDialog,
   ]);
+
+  useGlobalShortcuts({
+    onEscape: handleEscape,
+    onToggleZenMode: () => setIsZenMode(prev => !prev),
+    onSaveFeedback: () => showToast('✓ Guardado automático activo en el navegador', 'success'),
+    onOpenTemplates: () => setIsTemplatesModalOpen(true),
+    onOpenMermaid: () => setIsMermaidModalOpen(true),
+    onOpenShortcuts: () => setIsShortcutsModalOpen(true),
+  });
 
   // 1. Confirmación de Cerrar Pestaña
   const handleCloseTabRequest = (tabIdToClose: string) => {
@@ -186,169 +191,100 @@ export default function App() {
 
   // 2. Confirmación de Restaurar Ejemplo (3 opciones)
   const handleResetToDefault = () => {
-    setConfirmModal({
-      isOpen: true,
-      title: '¿Restaurar el ejemplo original?',
-      message:
-        'Esto cargará los datos del ejemplo original ("Estudiante UC 005") y restablecerá el color al tema original (Rosa Neón). ¿Deseas reemplazar la pestaña actual o abrirlo en una pestaña nueva?',
-      buttons: [
-        {
-          label: 'Cancelar',
-          style: 'cancel',
-          onClick: closeConfirmationDialog,
-        },
-        {
-          label: 'Abrir en Nueva Pestaña',
-          style: 'accent-outline',
-          onClick: () => {
-            closeConfirmationDialog();
-            resetToDefaultExample(true);
-            showToast('Ejemplo original abierto en nueva pestaña', 'success');
-          },
-        },
-        {
-          label: 'Reemplazar Pestaña Actual',
-          style: 'accent',
-          onClick: () => {
-            closeConfirmationDialog();
-            resetToDefaultExample(false);
-            showToast('Se restauraron los datos y el tema original (Rosa Neón)', 'info');
-          },
-        },
-      ],
-    });
+    promptThreeOptionConfirm(
+      '¿Restaurar el ejemplo original?',
+      'Esto cargará los datos del ejemplo original ("Estudiante UC 005") y restablecerá el color al tema original (Rosa Neón). ¿Deseas reemplazar la pestaña actual o abrirlo en una pestaña nueva?',
+      () => {
+        resetToDefaultExample(true);
+        showToast('Ejemplo original abierto en nueva pestaña', 'success');
+      },
+      () => {
+        resetToDefaultExample(false);
+        showToast('Se restauraron los datos y el tema original (Rosa Neón)', 'info');
+      },
+      'Reemplazar Pestaña Actual'
+    );
   };
 
   // 3. Confirmación de Nuevo en Blanco (3 opciones)
   const handleClearAll = () => {
-    setConfirmModal({
-      isOpen: true,
-      title: '¿Limpiar formulario actual o crear pestaña?',
-      message:
-        'Si limpias la pestaña actual se borrará su contenido (aunque podrás recuperarlo con Deshacer). También puedes abrir directamente una nueva pestaña en blanco.',
-      buttons: [
-        {
-          label: 'Cancelar',
-          style: 'cancel',
-          onClick: closeConfirmationDialog,
-        },
-        {
-          label: 'Abrir en Nueva Pestaña',
-          style: 'accent-outline',
-          onClick: () => {
-            closeConfirmationDialog();
-            clearAllFields(true);
-            showToast('Nueva pestaña en blanco creada', 'success');
-          },
-        },
-        {
-          label: 'Limpiar Pestaña Actual',
-          style: 'danger',
-          onClick: () => {
-            closeConfirmationDialog();
-            clearAllFields(false);
-            showToast('Formulario en blanco listo para editar', 'info');
-          },
-        },
-      ],
-    });
+    promptThreeOptionConfirm(
+      '¿Limpiar formulario actual o crear pestaña?',
+      'Si limpias la pestaña actual se borrará su contenido (aunque podrás recuperarlo con Deshacer). También puedes abrir directamente una nueva pestaña en blanco.',
+      () => {
+        clearAllFields(true);
+        showToast('Nueva pestaña en blanco creada', 'success');
+      },
+      () => {
+        clearAllFields(false);
+        showToast('Formulario en blanco listo para editar', 'info');
+      },
+      'Limpiar Pestaña Actual',
+      'danger'
+    );
   };
 
   // 4. Confirmación de Importar JSON o PNG editable (3 opciones)
   const handleImportFile = async (file: File) => {
     const isPngFile = file.name.toLowerCase().endsWith('.png') || file.type === 'image/png';
 
+    let result: ImportedUseCaseResult;
+    let sourceDesc: string;
+
     if (isPngFile) {
       try {
-        const result = await extractUseCaseFromPngFile(file);
-        if (!result) {
+        const extracted = await extractUseCaseFromPngFile(file);
+        if (!extracted) {
           showToast('Esta imagen PNG no contiene datos de caso de uso editables', 'error');
           return;
         }
-
-        const docLabel = result.data.nombre?.trim() || result.data.id?.trim() || file.name;
-
-        setConfirmModal({
-          isOpen: true,
-          title: '¿Cómo deseas importar este caso de uso desde la imagen PNG?',
-          message: `Se detectaron datos editables de "${docLabel}" incrustados en la imagen "${file.name}". Si reemplazas la pestaña actual se sobrescribirá lo que tienes en pantalla (puedes usar Deshacer), o puedes abrirlo en una nueva pestaña.`,
-          buttons: [
-            {
-              label: 'Cancelar',
-              style: 'cancel',
-              onClick: closeConfirmationDialog,
-            },
-            {
-              label: 'Abrir en Nueva Pestaña',
-              style: 'accent-outline',
-              onClick: () => {
-                closeConfirmationDialog();
-                importJsonData(result.data, result.theme, result.darkMode, true);
-                showToast('Caso de uso importado desde imagen PNG en una nueva pestaña', 'success');
-              },
-            },
-            {
-              label: 'Reemplazar Pestaña Actual',
-              style: 'accent',
-              onClick: () => {
-                closeConfirmationDialog();
-                importJsonData(result.data, result.theme, result.darkMode, false);
-                showToast('Caso de uso restaurado desde imagen PNG', 'success');
-              },
-            },
-          ],
-        });
+        result = extracted;
+        sourceDesc = `la imagen "${file.name}"`;
       } catch (err) {
         console.error(err);
         showToast('Error al leer los datos de la imagen PNG', 'error');
+        return;
       }
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = e => {
+    } else {
       try {
-        const text = e.target?.result as string;
+        const text = await file.text();
         const parsed = JSON.parse(text);
-        const result = validateAndSanitizeImportedJson(parsed);
-        const docLabel = result.data.nombre?.trim() || result.data.id?.trim() || file.name;
-
-        setConfirmModal({
-          isOpen: true,
-          title: '¿Cómo deseas importar este archivo JSON?',
-          message: `Estás por cargar "${docLabel}". Si reemplazas la pestaña actual se sobrescribirá lo que tienes en pantalla (puedes usar Deshacer), o puedes abrirlo en una pestaña nueva sin tocar la actual.`,
-          buttons: [
-            {
-              label: 'Cancelar',
-              style: 'cancel',
-              onClick: closeConfirmationDialog,
-            },
-            {
-              label: 'Abrir en Nueva Pestaña',
-              style: 'accent-outline',
-              onClick: () => {
-                closeConfirmationDialog();
-                importJsonData(result.data, result.theme, result.darkMode, true);
-                showToast('JSON importado en una nueva pestaña', 'success');
-              },
-            },
-            {
-              label: 'Reemplazar Pestaña Actual',
-              style: 'accent',
-              onClick: () => {
-                closeConfirmationDialog();
-                importJsonData(result.data, result.theme, result.darkMode, false);
-                showToast('Caso de uso importado correctamente', 'success');
-              },
-            },
-          ],
-        });
+        result = validateAndSanitizeImportedJson(parsed);
+        sourceDesc = `el archivo JSON "${file.name}"`;
       } catch (err) {
         console.error(err);
         showToast('El archivo JSON no tiene un formato válido', 'error');
+        return;
       }
-    };
-    reader.readAsText(file);
+    }
+
+    const docLabel = result.data.nombre?.trim() || result.data.id?.trim() || file.name;
+
+    promptThreeOptionConfirm(
+      isPngFile
+        ? '¿Cómo deseas importar este caso de uso desde la imagen PNG?'
+        : '¿Cómo deseas importar este archivo JSON?',
+      `Estás por cargar "${docLabel}" desde ${sourceDesc}. Si reemplazas la pestaña actual se sobrescribirá lo que tienes en pantalla (puedes usar Deshacer), o puedes abrirlo en una nueva pestaña.`,
+      () => {
+        importJsonData(result.data, result.theme, result.darkMode, true);
+        showToast(
+          isPngFile
+            ? 'Caso de uso importado desde imagen PNG en una nueva pestaña'
+            : 'JSON importado en una nueva pestaña',
+          'success'
+        );
+      },
+      () => {
+        importJsonData(result.data, result.theme, result.darkMode, false);
+        showToast(
+          isPngFile
+            ? 'Caso de uso restaurado desde imagen PNG'
+            : 'Caso de uso importado correctamente',
+          'success'
+        );
+      },
+      'Reemplazar Pestaña Actual'
+    );
   };
 
   const handleExportJSON = () => {
@@ -423,54 +359,14 @@ export default function App() {
   };
 
   // Drag and Drop global para archivos JSON y PNG editables
-  const [isDraggingFile, setIsDraggingFile] = useState(false);
-  const dragCounter = useRef(0);
-
-  const handleDragEnter = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('Files')) {
-      e.preventDefault();
-      dragCounter.current++;
-      setIsDraggingFile(true);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('Files')) {
-      e.preventDefault();
-      dragCounter.current--;
-      if (dragCounter.current <= 0) {
-        dragCounter.current = 0;
-        setIsDraggingFile(false);
-      }
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('Files')) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('Files')) {
-      e.preventDefault();
-      dragCounter.current = 0;
-      setIsDraggingFile(false);
-      const file = e.dataTransfer.files?.[0];
-      if (file) {
-        handleImportFile(file);
-      }
-    }
-  };
+  const { isDraggingFile, dragProps } = useFileDrop({
+    onFileDrop: handleImportFile,
+  });
 
   return (
     <div
       className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 relative"
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      {...dragProps}
     >
       {/* Overlay visual al arrastrar archivo (JSON o PNG editable) */}
       {isDraggingFile && (
