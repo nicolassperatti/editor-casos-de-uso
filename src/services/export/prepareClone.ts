@@ -22,7 +22,39 @@ export function prepareCleanCloneForExport(
 ): HTMLElement {
   const clone = sourceSheet.cloneNode(true) as HTMLElement;
 
-  // Si "Actor(es) secundario(s)" está vacío, ocultar celda lateral
+  // 1. PRIMERO: Reemplazar textareas e inputs por divs con clases espejo.
+  // Es CRÍTICO realizar esto ANTES de eliminar o modificar nodos del DOM
+  // (como ocultar #secActorsCell si está vacío) para que los índices y la
+  // correspondencia entre sourceSheet y clone coincidan exactamente 1:1.
+  const origFields = sourceSheet.querySelectorAll<HTMLTextAreaElement | HTMLInputElement>(
+    'textarea, input[type="text"]'
+  );
+  const cloneFields = clone.querySelectorAll<HTMLTextAreaElement | HTMLInputElement>(
+    'textarea, input[type="text"]'
+  );
+
+  cloneFields.forEach((field, i) => {
+    const mirror = document.createElement('div');
+    if (field.id) {
+      mirror.id = field.id;
+    }
+    // Priorizar coincidencia por id si está presente; fallback al índice 1:1
+    const origById = field.id
+      ? sourceSheet.querySelector<HTMLTextAreaElement | HTMLInputElement>(`#${field.id}`)
+      : null;
+    const val = origById ? origById.value : (origFields[i] ? origFields[i].value : field.value);
+
+    if (field.tagName.toLowerCase() === 'input') {
+      mirror.className = `${field.className} min-h-[22px] inline-flex items-center`;
+      mirror.textContent = val || '\u00A0';
+    } else {
+      mirror.className = field.className.replace('auto-textarea', 'export-text-mirror');
+      mirror.textContent = val || ' ';
+    }
+    field.parentNode?.replaceChild(mirror, field);
+  });
+
+  // 2. SEGUNDO: Si "Actor(es) secundario(s)" está vacío, ocultar celda lateral en el clon
   const secActorsVal = (data.actoresSecundarios || '').trim();
   const cloneSecCell = clone.querySelector('#secActorsCell');
   if (!secActorsVal && cloneSecCell) {
@@ -33,28 +65,6 @@ export function prepareCleanCloneForExport(
       parentRow.firstElementChild.classList.add('md:col-span-12');
     }
   }
-
-  // Reemplazar textareas e inputs por divs con clases espejo
-  const origFields = sourceSheet.querySelectorAll<HTMLTextAreaElement | HTMLInputElement>(
-    'textarea, input[type="text"]'
-  );
-  const cloneFields = clone.querySelectorAll<HTMLTextAreaElement | HTMLInputElement>(
-    'textarea, input[type="text"]'
-  );
-
-  cloneFields.forEach((field, i) => {
-    const mirror = document.createElement('div');
-    const val = origFields[i] ? origFields[i].value : field.value;
-
-    if (field.tagName.toLowerCase() === 'input') {
-      mirror.className = field.className;
-      mirror.textContent = val || '';
-    } else {
-      mirror.className = field.className.replace('auto-textarea', 'export-text-mirror');
-      mirror.textContent = val || ' ';
-    }
-    field.parentNode?.replaceChild(mirror, field);
-  });
 
   return clone;
 }

@@ -5,7 +5,7 @@ import { wrapAndSanitizeMermaidText, parseStepNumberFromRef } from '../mermaid/w
 import { DEFAULT_USE_CASE_DATA } from '../../constants/defaultData';
 import { BASE_THEMES, hexToRgb } from '../../constants/themes';
 import { validateAndSanitizeImportedJson } from '../export/jsonStorage';
-import { getSanitizedFilename } from '../export/prepareClone';
+import { getSanitizedFilename, prepareCleanCloneForExport } from '../export/prepareClone';
 
 describe('Servicios de Dominio - Mermaid y Exportación', () => {
   describe('Clasificador Semántico de Pasos de Secuencia (Español)', () => {
@@ -111,6 +111,248 @@ describe('Servicios de Dominio - Mermaid y Exportación', () => {
       expect(rgb.r).toBe(255);
       expect(rgb.g).toBe(42);
       expect(rgb.b).toBe(133);
+    });
+  });
+
+  describe('Preparación de Clon para Exportación (prepareCleanCloneForExport)', () => {
+    class MockElement {
+      tagName: string;
+      id: string = '';
+      className: string = '';
+      value: string = '';
+      textContent: string = '';
+      children: MockElement[] = [];
+      parentElement: MockElement | null = null;
+      get parentNode(): MockElement | null {
+        return this.parentElement;
+      }
+      classList = {
+        classes: new Set<string>(),
+        add: (...cls: string[]) => cls.forEach(c => this.classList.classes.add(c)),
+        remove: (...cls: string[]) => cls.forEach(c => this.classList.classes.delete(c)),
+        contains: (c: string) => this.classList.classes.has(c),
+      };
+
+      constructor(tagName: string) {
+        this.tagName = tagName.toUpperCase();
+      }
+
+      get firstElementChild(): MockElement | null {
+        return this.children[0] || null;
+      }
+
+      appendChild(child: MockElement) {
+        child.parentElement = this;
+        this.children.push(child);
+        return child;
+      }
+
+      removeChild(child: MockElement) {
+        const idx = this.children.indexOf(child);
+        if (idx !== -1) {
+          this.children.splice(idx, 1);
+          child.parentElement = null;
+        }
+        return child;
+      }
+
+      remove() {
+        this.parentElement?.removeChild(this);
+      }
+
+      replaceChild(newChild: MockElement, oldChild: MockElement) {
+        const idx = this.children.indexOf(oldChild);
+        if (idx !== -1) {
+          newChild.parentElement = this;
+          oldChild.parentElement = null;
+          this.children[idx] = newChild;
+        }
+        return oldChild;
+      }
+
+      cloneNode(deep?: boolean): MockElement {
+        const clone = new MockElement(this.tagName);
+        clone.id = this.id;
+        clone.className = this.className;
+        clone.value = this.value;
+        clone.textContent = this.textContent;
+        this.classList.classes.forEach(c => clone.classList.add(c));
+        if (deep) {
+          this.children.forEach(child => {
+            clone.appendChild(child.cloneNode(true));
+          });
+        }
+        return clone;
+      }
+
+      querySelectorAll<T = MockElement>(selector: string): T[] {
+        const results: MockElement[] = [];
+        const matches = (node: MockElement): boolean => {
+          if (selector === 'textarea, input[type="text"]') {
+            return node.tagName === 'TEXTAREA' || node.tagName === 'INPUT';
+          }
+          if (selector.startsWith('#')) {
+            return node.id === selector.slice(1);
+          }
+          if (selector.startsWith('.')) {
+            const cls = selector.slice(1);
+            return node.classList.contains(cls) || node.className.includes(cls);
+          }
+          return false;
+        };
+
+        const traverse = (node: MockElement) => {
+          node.children.forEach(child => {
+            if (matches(child)) {
+              results.push(child);
+            }
+            traverse(child);
+          });
+        };
+        traverse(this);
+        return results as unknown as T[];
+      }
+
+      querySelector<T = MockElement>(selector: string): T | null {
+        return (this.querySelectorAll<T>(selector)[0] as T) || null;
+      }
+    }
+
+    const setupMockDocument = () => {
+      const origDoc = globalThis.document;
+      globalThis.document = {
+        createElement: (tag: string) => new MockElement(tag),
+      } as unknown as Document;
+      return () => {
+        globalThis.document = origDoc;
+      };
+    };
+
+    it('debe mantener correspondencia 1:1 de campos sin desplazamiento cuando actoresSecundarios está vacío', () => {
+      const restoreDoc = setupMockDocument();
+      try {
+        const source = new MockElement('DIV');
+
+        const fNombre = new MockElement('TEXTAREA');
+        fNombre.id = 'field-nombre';
+        fNombre.value = 'Crear Cuenta Nueva';
+        source.appendChild(fNombre);
+
+        const fId = new MockElement('TEXTAREA');
+        fId.id = 'field-id';
+        fId.value = 'AUTH UC 001';
+        source.appendChild(fId);
+
+        const fActores = new MockElement('TEXTAREA');
+        fActores.id = 'field-actores';
+        fActores.value = 'Dueño De Mascota';
+        source.appendChild(fActores);
+
+        const secCell = new MockElement('DIV');
+        secCell.id = 'secActorsCell';
+        const fSec = new MockElement('TEXTAREA');
+        fSec.id = 'field-actoresSecundarios';
+        fSec.value = '';
+        secCell.appendChild(fSec);
+        source.appendChild(secCell);
+
+        const fDesc = new MockElement('TEXTAREA');
+        fDesc.id = 'field-descripcion';
+        fDesc.value = 'Permitir que un dueño pueda registrarse';
+        source.appendChild(fDesc);
+
+        const fEvento = new MockElement('TEXTAREA');
+        fEvento.id = 'field-evento';
+        fEvento.value = 'El usuario pulsa registrarse';
+        source.appendChild(fEvento);
+
+        const altRow = new MockElement('DIV');
+        const fPasoRef = new MockElement('INPUT');
+        fPasoRef.className = 'w-16';
+        fPasoRef.value = '3.a';
+        altRow.appendChild(fPasoRef);
+
+        const fCond = new MockElement('TEXTAREA');
+        fCond.value = 'Si el mail ya existe';
+        altRow.appendChild(fCond);
+
+        const fAcc = new MockElement('TEXTAREA');
+        fAcc.value = 'Se le avisa que ya existe';
+        altRow.appendChild(fAcc);
+        source.appendChild(altRow);
+
+        const fPrioridad = new MockElement('TEXTAREA');
+        fPrioridad.id = 'field-prioridad';
+        fPrioridad.value = 'Alta';
+        source.appendChild(fPrioridad);
+
+        const mockData = {
+          ...DEFAULT_USE_CASE_DATA,
+          actoresSecundarios: '',
+        };
+
+        const clone = prepareCleanCloneForExport(source as unknown as HTMLElement, mockData) as unknown as MockElement;
+
+        // 1. #secActorsCell debe eliminarse del clon
+        expect(clone.querySelector('#secActorsCell')).toBeNull();
+
+        // 2. Descripción debe mantener su texto exacto y NO estar vacía ni desplazada
+        const descMirror = clone.querySelector('#field-descripcion');
+        expect(descMirror).not.toBeNull();
+        expect(descMirror?.textContent).toBe('Permitir que un dueño pueda registrarse');
+
+        // 3. Evento debe mantener su texto exacto
+        const eventMirror = clone.querySelector('#field-evento');
+        expect(eventMirror?.textContent).toBe('El usuario pulsa registrarse');
+
+        // 4. El input w-16 de pasoRef debe tener "3.a" y NO el texto largo de condición
+        const pasoRefMirror = clone.querySelector('.w-16');
+        expect(pasoRefMirror?.textContent).toBe('3.a');
+
+        // 5. Prioridad debe tener "Alta" y no haberse corrido
+        const prioridadMirror = clone.querySelector('#field-prioridad');
+        expect(prioridadMirror?.textContent).toBe('Alta');
+      } finally {
+        restoreDoc();
+      }
+    });
+
+    it('debe conservar secActorsCell cuando actoresSecundarios tiene contenido', () => {
+      const restoreDoc = setupMockDocument();
+      try {
+        const source = new MockElement('DIV');
+
+        const fActores = new MockElement('TEXTAREA');
+        fActores.id = 'field-actores';
+        fActores.value = 'Cliente';
+        source.appendChild(fActores);
+
+        const secCell = new MockElement('DIV');
+        secCell.id = 'secActorsCell';
+        const fSec = new MockElement('TEXTAREA');
+        fSec.id = 'field-actoresSecundarios';
+        fSec.value = 'Pasarela de Pago';
+        secCell.appendChild(fSec);
+        source.appendChild(secCell);
+
+        const fDesc = new MockElement('TEXTAREA');
+        fDesc.id = 'field-descripcion';
+        fDesc.value = 'Descripción del pago';
+        source.appendChild(fDesc);
+
+        const mockData = {
+          ...DEFAULT_USE_CASE_DATA,
+          actoresSecundarios: 'Pasarela de Pago',
+        };
+
+        const clone = prepareCleanCloneForExport(source as unknown as HTMLElement, mockData) as unknown as MockElement;
+
+        expect(clone.querySelector('#secActorsCell')).not.toBeNull();
+        expect(clone.querySelector('#field-actoresSecundarios')?.textContent).toBe('Pasarela de Pago');
+        expect(clone.querySelector('#field-descripcion')?.textContent).toBe('Descripción del pago');
+      } finally {
+        restoreDoc();
+      }
     });
   });
 });
